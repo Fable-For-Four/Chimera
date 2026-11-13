@@ -1,0 +1,92 @@
+{
+  "summary": {
+    "events": 5124,
+    "sources": 4,
+    "late": 212,
+    "alerts_fired": 0
+  },
+  "alert_rules": [
+    {
+      "name": "5 failed sign-ins in a minute",
+      "seen": "saw 2 of 5",
+      "ratio": 0.4,
+      "fired": false
+    },
+    {
+      "name": "Outbound transfer over 5 GB",
+      "seen": "saw 2.1 GB of 5 GB",
+      "ratio": 0.42,
+      "fired": false
+    },
+    {
+      "name": "Sign-in from a blocked country",
+      "seen": "saw none",
+      "ratio": 0.0,
+      "fired": false
+    },
+    {
+      "name": "Admin group changed by an unknown account",
+      "seen": "saw none",
+      "ratio": 0.0,
+      "fired": false
+    }
+  ],
+  "volume": [
+    { "start": "03:00", "count": 268 },
+    { "start": "03:05", "count": 281 },
+    { "start": "03:10", "count": 276 },
+    { "start": "03:15", "count": 289 },
+    { "start": "03:20", "count": 294 },
+    { "start": "03:25", "count": 283 }
+  ],
+  "latest": [
+    {
+      "id": "L-0001",
+      "time": "03:00:02",
+      "source": "MAIL-01",
+      "raw": "03:00:02 MAIL-01 MAIL_RECV user=night.user01"
+    },
+    {
+      "id": "L-0002",
+      "time": "03:00:03",
+      "source": "fw-edge",
+      "raw": "03:00:03 fw-edge CONN_OPEN src=MAIL-01 dst=10.0.0.18:443"
+    },
+    {
+      "id": "L-0003",
+      "time": "03:00:04",
+      "source": "dc",
+      "raw": "03:00:04 dc HEALTH_OK host=DC-01"
+    },
+    {
+      "id": "L-0004",
+      "time": "03:00:05",
+      "source": "files",
+      "raw": "03:00:05 files JOB_START user=night.user02 host=HR-SRV-01"
+    },
+    {
+      "id": "L-0005",
+      "time": "03:00:06",
+      "source": "vpn-gw",
+      "raw": "03:00:06 vpn-gw AUTH_OK user=night.user03 src=10.0.0.33 geo=IN"
+    },
+    {
+      "id": "L-0006",
+      "time": "03:00:07",
+      "source": "PRINT-02",
+      "raw": "03:00:07 PRINT-02 CRON job=print-cleanup"
+    },
+    {
+      "id": "L-0007",
+      "time": "03:00:08",
+      "source": "MAIL-01",
+      "raw": "03:00:08 MAIL-01 MAIL_SEND user=night.user04"
+    },
+    {
+      "id": "L-0008",
+      "time": "03:00:09",
+      "source": "fw-edge",
+      "raw": "03:00:09 fw-edge CONN_CLOSE src=MAIL-01 dst=10.0.0.18:443"
+    }
+  ]
+}
