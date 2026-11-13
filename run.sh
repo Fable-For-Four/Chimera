@@ -61,13 +61,19 @@ stop() {
 }
 trap stop EXIT INT TERM
 
-uvicorn api.main:app --host 127.0.0.1 --port 8000 &
+# Server output goes to the screen and to logs/ (ignored by git), so a crash can be read later.
+# Each server runs in a subshell pipe, so stop() kills the server and its tee together.
+# The demo-mode build output is not logged, only the two servers.
+mkdir -p logs
+echo "=== run started $(date -u +%Y-%m-%dT%H:%M:%SZ) ===" | tee -a logs/api.log >> logs/web.log
+(PYTHONUNBUFFERED=1 uvicorn api.main:app --host 127.0.0.1 --port 8000 2>&1 | tee -a logs/api.log) &
 if [ "$MODE" = demo ]; then
   npm --prefix web run build
-  npm --prefix web start &
+  (npm --prefix web start 2>&1 | tee -a logs/web.log) &
 else
-  npm --prefix web run dev &
+  (npm --prefix web run dev 2>&1 | tee -a logs/web.log) &
 fi
 
 echo "Chimera is running at http://localhost:3000. Press Ctrl+C to stop."
+echo "Server logs: logs/api.log and logs/web.log"
 wait
