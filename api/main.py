@@ -1,3 +1,4 @@
+import logging
 import sqlite3
 from contextlib import asynccontextmanager
 
@@ -6,6 +7,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, EmailStr, field_validator
 
+from api import case_files
 from api.auth import (
     MAX_PASSWORD_BYTES,
     check_dummy_password,
@@ -18,7 +20,9 @@ from api.auth import (
     user_out,
 )
 from api.db import get_db, init_db, now_iso
-from api.permissions import DEFAULT_ROLE
+from api.permissions import DEFAULT_ROLE, ROLE_PERMISSIONS, require
+
+logger = logging.getLogger("chimera.api")
 
 
 @asynccontextmanager
@@ -42,6 +46,12 @@ async def plain_validation_error(request: Request, exc: RequestValidationError):
     else:
         message = errors[0]["msg"].removeprefix("Value error, ")
     return JSONResponse(status_code=422, content={"detail": message})
+
+
+@app.exception_handler(case_files.UnreadableCaseFile)
+async def unreadable_case_file(request: Request, exc: case_files.UnreadableCaseFile):
+    logger.error("Could not read a case file: %s", exc)
+    return JSONResponse(status_code=500, content={"detail": "The case files could not be read"})
 
 
 def clean_email(value):
@@ -116,3 +126,108 @@ def logout(response: Response):
 @app.get("/api/auth/me")
 def me(user=Depends(current_user)):
     return user_out(user)
+
+
+def no_case():
+    return HTTPException(status_code=404, detail="Run the investigation first")
+
+
+@app.get("/api/intake")
+def get_intake(user=Depends(require("case:read"))):
+    data = case_files.intake()
+    if data is None:
+        raise no_case()
+    return JSONResponse(content=data)
+
+
+@app.get("/api/case")
+def get_case(user=Depends(require("case:read"))):
+    data = case_files.case()
+    if data is None:
+        raise no_case()
+    return JSONResponse(content=data)
+
+
+@app.get("/api/case/stress/{level}")
+def get_stress(level: str, user=Depends(require("case:read"))):
+    if level not in {str(n) for n in case_files.STRESS_LEVELS}:
+        raise HTTPException(status_code=404, detail="Unknown stress level")
+    data = case_files.stress(int(level))
+    if data is None:
+        raise no_case()
+    return JSONResponse(content=data)
+
+
+@app.post("/api/case/run")
+def run_case(user=Depends(require("case:run")), db=Depends(get_db)):
+    def clear_approvals():
+        db.execute("DELETE FROM approvals")
+        db.commit()
+
+    try:
+        data = case_files.run_investigation(on_success=clear_approvals)
+    except Exception as exc:
+        logger.error("The investigation failed: %s", exc)
+        raise HTTPException(status_code=500, detail="The investigation failed") from None
+    if data is None:
+        logger.error("The investigation failed: the engine wrote no case.json")
+        raise HTTPException(status_code=500, detail="The investigation failed")
+    return JSONResponse(content=data)
+
+
+@app.post("/api/actions/{action_id}/approve", status_code=201)
+def approve(action_id: str, user=Depends(require("action:approve")), db=Depends(get_db)):
+    with case_files.lock:
+        current = case_files.case() or {}
+        if action_id not in {action["id"] for action in current.get("actions", [])}:
+            raise HTTPException(status_code=404, detail="This action is not in the current case")
+        stamp = now_iso()
+        try:
+            db.execute(
+                "INSERT INTO approvals (action_id, user_id, approved_at) VALUES (?, ?, ?)",
+                (action_id, user["id"], stamp),
+            )
+            db.commit()
+        except sqlite3.IntegrityError:
+            raise HTTPException(status_code=409, detail="This action is already approved") from None
+    return {"action_id": action_id, "approved_by": user["name"], "approved_at": stamp}
+
+
+@app.get("/api/approvals")
+def list_approvals(user=Depends(require("case:read")), db=Depends(get_db)):
+    rows = db.execute(
+        "SELECT a.action_id, u.name AS approved_by, a.approved_at"
+        " FROM approvals a LEFT JOIN users u ON u.id = a.user_id"
+        " ORDER BY a.approved_at, a.id"
+    ).fetchall()
+    return [dict(row) for row in rows]
+
+
+@app.get("/api/users")
+def list_users(user=Depends(require("user:manage")), db=Depends(get_db)):
+    rows = db.execute("SELECT * FROM users ORDER BY id").fetchall()
+    return [user_out(row) for row in rows]
+
+
+class RoleBody(BaseModel):
+    role: str
+
+    @field_validator("role")
+    @classmethod
+    def known_role(cls, value):
+        if value not in ROLE_PERMISSIONS:
+            raise ValueError("Unknown role")
+        return value
+
+
+@app.patch("/api/users/{user_id}/role")
+def change_role(
+    user_id: int, body: RoleBody, admin=Depends(require("user:manage")), db=Depends(get_db)
+):
+    if user_id == admin["id"]:
+        raise HTTPException(status_code=409, detail="You cannot change your own role")
+    if db.execute("SELECT 1 FROM users WHERE id = ?", (user_id,)).fetchone() is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    db.execute("UPDATE users SET role = ? WHERE id = ?", (body.role, user_id))
+    db.commit()
+    return user_out(db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone())
