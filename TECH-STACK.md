@@ -30,7 +30,7 @@ out/intake.json, out/case.json, out/stress/*.json  ◄── engine ◄── da
 | **Python 3.11+** | Generator, engine and API. Write for 3.11 so every teammate can run it. The main laptop has 3.14. |
 | **TypeScript** | The UI code. Types catch a mismatch with the API's JSON before the page runs. |
 | **Node.js 20+** | Runs Next.js. The main laptop has Node 24. |
-| **CSS** | Styles, copied from the mock into one global file. |
+| **CSS** | All styles in one global file, a dark desktop-first theme. |
 | **SVG** | The attack graph, timeline, confidence ring and stress chart, written in JSX. |
 | **Bash** | `run.sh`, the one command that sets up and starts everything. |
 
@@ -54,7 +54,7 @@ No pandas, no NumPy, no ML library. The data is 5,000 rows and the logic is rule
 
 | Tool | Use |
 |---|---|
-| **`fastapi`** | The web server: routes, request checks, shared sign-in and permission checks, serving the UI files. |
+| **`fastapi`** | The API server only: routes under `/api`, request checks, shared sign-in and permission checks. It never serves UI files. The frontend is Next.js only. |
 | **`uvicorn`** | Runs the FastAPI app. |
 | **`pydantic`** (comes with FastAPI) | Checks request bodies and rejects bad ones with `422`. |
 | **`email-validator`** | Lets `pydantic` check that an email address is well formed. |
@@ -96,10 +96,9 @@ No pandas, no NumPy, no ML library. The data is 5,000 rows and the logic is rule
 | **React context** | Shares the signed-in user, the case, the selected step and the stress level between screens. No state library. |
 | **`next/font/google`** | Loads Geist, Geist Mono and Instrument Serif. The fonts are downloaded at build time, so the running app needs no internet for them. |
 | **`fetch`** | Calls the API from the browser. |
-| **Global CSS** (`app/globals.css`) | The mock's styles. No Tailwind and no component library. |
+| **Global CSS** (`app/globals.css`) | All styles. No Tailwind and no component library. |
 | **ESLint** (comes with Next.js) | Catches common React mistakes. `npm run lint`. |
 | **`npm`** | Installs the frontend packages. Commit `package-lock.json`. |
-| **`docs/mock.html`** | The design reference. Keep its look and behaviour. |
 
 Create the app with `npx create-next-app@latest web`, choosing TypeScript, ESLint and the App Router, and declining Tailwind. Use the version it installs and do not upgrade during the hackathon.
 
@@ -121,7 +120,8 @@ No Tailwind, no component library, no state library, no data-fetching library, n
 | **`venv`** (built in) | A private Python environment in `.venv/`. |
 | **`pip` and `requirements.txt`** | Installs the packages. |
 | **`npm` and `web/package.json`** | Installs the frontend packages. |
-| **`run.sh`** | Creates the venv, installs both sides, loads `.env`, generates data, runs the engine, seeds users, starts FastAPI and Next.js. |
+| **`run.sh`** | Creates the venv, installs both sides, loads `.env`, generates data, runs the engine, seeds users, starts FastAPI and Next.js. On Windows, run it from Git Bash. `./run.sh demo` uses the production UI build. |
+| **`.gitattributes`** | Keeps `*.sh` and `.env*` on Unix line endings, so bash works on Windows checkouts. |
 | **`.env`** | Local secrets. Never committed. |
 | **`.env.example`** | The variable names with empty values, committed. |
 | **`.gitignore`** | Keeps `.venv/`, `.env`, `app.db`, `out/`, `__pycache__/`, `web/node_modules/` and `web/.next/` out of the repo. |
@@ -212,5 +212,4 @@ Commands:
 ## Open decisions
 
 - **Email sender:** with Resend's test sender, mail may only reach the Resend account owner's address. Check this in the Resend dashboard. To reach any inbox, verify a domain there and set `EMAIL_FROM`.
-- **UI base:** the RedString mock or `CHIMERA.html`. Both files assume the RedString mock.
-- **Product name:** RedString or Chimera.
+- **Product name:** Chimera (decided).
