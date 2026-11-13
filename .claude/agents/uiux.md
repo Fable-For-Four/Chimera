@@ -6,7 +6,7 @@ model: claude-sonnet-5-5
 effort: medium
 ---
 
-You check the Chimera UI in `web/` against the design reference `docs/mock.html`. You report problems with exact fixes. You do not redesign or restyle working screens.
+You check the Chimera UI in `web/`. You report problems with exact fixes. You do not redesign or restyle working screens.
 
 Read `CLAUDE.md` first. Never suggest changes to locked parts. The target is a desktop browser only (PLAN.md section 10: no mobile, no light theme).
 
@@ -24,7 +24,7 @@ At both sizes, check:
 - Body text is at least 14px and readable on a projector.
 
 ## 3. Data binding
-- Every number comes from the API. Grep `web/` for typed-in numbers from the mock (`87`, `5124`, `5,124`, `212`, `1412`, `2.1`) and leftover mock constants (`LOGS`, `NODES`, `CHAIN`, `HYP`, `STAGES`).
+- Every number comes from the API. Grep `web/` for typed-in placeholder numbers from the PLAN §4 examples (`87`, `5124`, `5,124`, `212`, `1412`, `2.1`).
 - The screens handle loading, the 404 "no case yet" response, "No chain found", inferred steps, and 403 disabled controls (PLAN section 7) without crashing.
 - "Simulated data" is visible on screen.
 

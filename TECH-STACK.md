@@ -30,7 +30,7 @@ out/intake.json, out/case.json, out/stress/*.json  ◄── engine ◄── da
 | **Python 3.11+** | Generator, engine and API. Write for 3.11 so every teammate can run it. The main laptop has 3.14. |
 | **TypeScript** | The UI code. Types catch a mismatch with the API's JSON before the page runs. |
 | **Node.js 20+** | Runs Next.js. The main laptop has Node 24. |
-| **CSS** | Styles, copied from the mock into one global file. |
+| **CSS** | All styles in one global file, a dark desktop-first theme. |
 | **SVG** | The attack graph, timeline, confidence ring and stress chart, written in JSX. |
 | **Bash** | `run.sh`, the one command that sets up and starts everything. |
 
@@ -96,10 +96,9 @@ No pandas, no NumPy, no ML library. The data is 5,000 rows and the logic is rule
 | **React context** | Shares the signed-in user, the case, the selected step and the stress level between screens. No state library. |
 | **`next/font/google`** | Loads Geist, Geist Mono and Instrument Serif. The fonts are downloaded at build time, so the running app needs no internet for them. |
 | **`fetch`** | Calls the API from the browser. |
-| **Global CSS** (`app/globals.css`) | The mock's styles. No Tailwind and no component library. |
+| **Global CSS** (`app/globals.css`) | All styles. No Tailwind and no component library. |
 | **ESLint** (comes with Next.js) | Catches common React mistakes. `npm run lint`. |
 | **`npm`** | Installs the frontend packages. Commit `package-lock.json`. |
-| **`docs/mock.html`** | The design reference. Keep its look and behaviour. |
 
 Create the app with `npx create-next-app@latest web`, choosing TypeScript, ESLint and the App Router, and declining Tailwind. Use the version it installs and do not upgrade during the hackathon.
 
@@ -213,5 +212,4 @@ Commands:
 ## Open decisions
 
 - **Email sender:** with Resend's test sender, mail may only reach the Resend account owner's address. Check this in the Resend dashboard. To reach any inbox, verify a domain there and set `EMAIL_FROM`.
-- **UI base:** the Chimera mock, saved as `docs/mock.html`. **Not in the repo yet.** Whoever has it commits it before 03:00, because Lane C styles and Lane A's `layout.json` both copy from it.
 - **Product name:** Chimera (decided).

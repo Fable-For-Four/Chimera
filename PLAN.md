@@ -4,7 +4,7 @@ HackInnovision 2026, Track C (Chimera). Team of 4, each driving one coding agent
 
 **Pitch in one line:** 5,124 innocent-looking log lines go in, one proven attack story comes out.
 
-**Design reference:** `docs/mock.html`, the clickable mock. Every screen named below exists in it. All numbers in the mock are placeholders. The engine must produce the real ones.
+**Design:** Lane C designs a dark, desktop-first look in `app/globals.css`, following the screens in section 7. All numbers in this plan's examples are placeholders. The engine must produce the real ones.
 
 **How to use this file:** section 8 is the task board. Each task names the files it owns and the sections that specify it. Sections 4, 5, 6, 7 and 14 are the specifications.
 
@@ -75,7 +75,7 @@ UI (Next.js, calling the API)   ┘
 - **Engine:** a command-line program that writes JSON files. It knows nothing about users. No ML training.
 - **API:** FastAPI on `http://localhost:8000`. Serves the engine's JSON to signed-in users and records approvals.
 - **App data:** SQLite, three tables (users, email tokens, approvals).
-- **UI:** a Next.js app on `http://localhost:3000`, rebuilt from the mock, one route per screen, reading everything from the API.
+- **UI:** a Next.js app on `http://localhost:3000`, built to section 7, one route per screen, reading everything from the API.
 - **One address for the browser:** Next.js forwards every `/api/*` request to FastAPI. The browser only ever talks to `localhost:3000`, so the cookie works and no CORS setup is needed.
 - **One command:** `./run.sh` creates the venv, installs both sides, generates data, runs the engine, seeds users and starts both servers.
 
@@ -96,7 +96,6 @@ web/            the Next.js app
   components/   Shell.tsx Start.tsx Overview.tsx EvidenceDrawer.tsx ApprovalsPanel.tsx QuestionsPanel.tsx
   lib/          api.ts types.ts state.tsx
   next.config.ts package.json
-docs/           mock.html
 tests/          fixtures/case.sample.json fixtures/intake.sample.json test_*.py
 run.sh  requirements.txt  .env.example  .gitignore  README.md  PLAN.md  TECH-STACK.md
 ```
@@ -205,7 +204,7 @@ run.sh  requirements.txt  .env.example  .gitignore  README.md  PLAN.md  TECH-STA
 - When no chain is found: `verdict.found` is false, `label` is "No chain found", `confidence` is 0, and `chain`, `report`, `actions` and `questions` are empty lists. The UI must show this state without errors.
 - A stress file has the same shape, with `level` set to the percentage and `deleted` to the number of events removed.
 
-`tests/fixtures/case.sample.json` and `intake.sample.json` are hand-written examples of these shapes, copied from the mock's numbers. The UI is built against them until the engine is ready.
+`tests/fixtures/case.sample.json` and `intake.sample.json` are hand-written examples of these shapes, using the example values in this section. The UI is built against them until the engine is ready.
 
 ## 5. The scenario and the generator
 
@@ -253,7 +252,17 @@ Every field listed above must be set. Each one is needed for the event to reach 
 ### IDs and layout
 
 - IDs are `L-0001` upward in arrival order.
-- `layout.json` gives positions for the attack's nodes and the six named normal nodes. Copy the positions from `NODES` in `docs/mock.html`.
+- `layout.json` gives positions for the attack's nodes and the six named normal nodes, on the 860 by 480 canvas. The attack path reads left to right:
+
+| Node | Position | Node | Position |
+|---|---|---|---|
+| `203.0.113.47` | [70, 240] | `198.51.100.23` | [760, 240] |
+| `priya.s` | [190, 240] | `HR-SRV-01` | [570, 400] |
+| `WS-PRIYA-014` | [310, 240] | `MAIL-01` | [190, 80] |
+| `DC-01` | [430, 160] | `arjun.m` | [330, 80] |
+| `svc-backup` | [430, 320] | `PRINT-02` | [690, 80] |
+| `FIN-SRV-02` | [570, 240] | `BKP-01` | [310, 400] |
+| `neha.k` | [800, 400] | `WS-NEHA-022` | [690, 400] |
 
 **Done when:** two runs with the same seed give identical files. The file has 5,100 to 5,200 events. `truth.json` lists 12 IDs. The step 3 `LOGON` appears after the `TICKET_REQ` in the file but has the earlier `ts`. No attack entity is in more than 5% of events. No planted event other than the `LOGON` is late.
 
@@ -341,7 +350,7 @@ Each rule checks one event against its baseline. A rule that matches adds its na
 8. **Step confidence:** `1 - (1-s1)(1-s2)…` over the step's event scores, capped at 0.97, as a whole percentage.
 9. **Inferred steps:** if a stage between the first and last present stages has no events, add a step with `inferred` true, no exhibits, confidence at half the lower of its two neighbours, `from` set to the previous step's `to`, and `to` set to the next step's `from`.
 10. **Chain confidence:** the mean of all step confidences, times `0.6 + 0.08 × (number of stages with real events)`, rounded.
-11. **What, usual, now:** one template per stage. Examples: "VPN sign-in to {user} from a new country", usual "{countries}, {hours}", now "{geo}, {time}". Take the wording from `CHAIN` in `docs/mock.html`.
+11. **What, usual, now:** one template per stage. Examples: "VPN sign-in to {user} from a new country", usual "{countries}, {hours}", now "{geo}, {time}". Keep each template to one short line.
 
 Result line: "1 chain, N steps, M events" or "No chain found".
 
@@ -424,13 +433,13 @@ All nine files are written by `engine.run`. Nothing is computed during the demo.
 
 ## 7. The UI
 
-A Next.js app in `web/`, rebuilt from `docs/mock.html`. Keep the mock's look, its screen names and its behaviour. Replace its hardcoded constants with data from the API.
+A Next.js app in `web/`, built to the screens below. Every value comes from the API.
 
 ### Structure
 
 - **Next.js with the App Router and TypeScript.** Created with `create-next-app`, without Tailwind.
 - **Every screen is a client component** (`"use client"` at the top). Data is fetched in the browser with `fetch`. No server components fetch data, so the cookie never has to be forwarded by hand.
-- `app/globals.css` holds the mock's styles, copied across. Keep the mock's class names. No CSS framework.
+- `app/globals.css` holds all styles in one file: a dark theme, desktop first, plain class names. No CSS framework.
 - `app/layout.tsx` loads the fonts with `next/font/google` (Geist, Geist Mono, Instrument Serif) and wraps every page in the state provider and `Shell`.
 - `components/Shell.tsx` draws the sidebar and top bar, and decides between sign-in, "check your email" and the app (section 14.9).
 - `lib/api.ts` wraps `fetch`: JSON in and out, a `401` sends the user to `/login`, a `403` shows its message.
@@ -466,7 +475,7 @@ A Next.js app in `web/`, rebuilt from `docs/mock.html`. Keep the mock's look, it
 
 ### What stays out of the UI
 
-- No number is typed into the UI. If the mock shows a number, it comes from the API.
+- No number is typed into the UI. If a screen shows a number, it comes from the API.
 - Log text is rendered as plain text in JSX, because it is untrusted input. Never use `dangerouslySetInnerHTML`.
 
 ## 8. Task board
@@ -610,7 +619,7 @@ Start already signed in as the analyst.
 | 7:15 | Report and approvals | "Every sentence cites a log line. Nothing changes until a person approves, and only an analyst can." Approve one action and show the name and time. |
 | 7:45 | Close | "5,000 innocent lines in, one proven story out." |
 
-Use the real numbers from the screen. The numbers in this script and in the mock are placeholders.
+Use the real numbers from the screen. The numbers in this script are placeholders.
 
 Questions to prepare for:
 
