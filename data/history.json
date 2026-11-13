@@ -1,0 +1,1002 @@
+{
+  "users": {
+    "priya.s": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "WS-PRIYA-014",
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "arjun.m": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        22,
+        6
+      ],
+      "hosts": [
+        "WS-ARJUN-064",
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "LOGON",
+        "MAIL_RECV",
+        "MAIL_SEND",
+        "SMB_SESSION",
+        "FILE_READ"
+      ]
+    },
+    "neha.k": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        22,
+        6
+      ],
+      "hosts": [
+        "WS-NEHA-022",
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "LOGON",
+        "MAIL_RECV",
+        "MAIL_SEND",
+        "SMB_SESSION",
+        "FILE_READ"
+      ]
+    },
+    "lakshmi.t": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "deepa.y": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "nikhil.o": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "uday.q": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "aditi.x": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        22,
+        6
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "LOGON",
+        "MAIL_RECV",
+        "MAIL_SEND",
+        "SMB_SESSION",
+        "FILE_READ"
+      ]
+    },
+    "akash.w": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "WS-AKASH-798",
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "sanjay.c": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        22,
+        6
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "LOGON",
+        "MAIL_RECV",
+        "MAIL_SEND",
+        "SMB_SESSION",
+        "FILE_READ"
+      ]
+    },
+    "ananya.s": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "meera.k": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "sneha.y": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "akash.h": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "riya.z": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "WS-RIYA-547",
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "gaurav.l": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        22,
+        6
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "LOGON",
+        "MAIL_RECV",
+        "MAIL_SEND",
+        "SMB_SESSION",
+        "FILE_READ"
+      ]
+    },
+    "aditi.m": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "ananya.k": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "rahul.c": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "WS-RAHUL-699",
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "pooja.m": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "akash.t": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "isha.m": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "ananya.o": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "WS-ANANYA-511",
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "sanjay.s": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "pooja.s": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "akash.i": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "sneha.h": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        22,
+        6
+      ],
+      "hosts": [
+        "WS-SNEHA-213",
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "LOGON",
+        "MAIL_RECV",
+        "MAIL_SEND",
+        "SMB_SESSION",
+        "FILE_READ"
+      ]
+    },
+    "anil.w": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "gaurav.u": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "tanvi.v": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "tanvi.s": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "akash.l": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "sneha.s": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "WS-SNEHA-636",
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "suresh.b": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "nikhil.q": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "WS-NIKHIL-948",
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "aditi.y": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "gaurav.s": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "WS-GAURAV-602",
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "aditi.v": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "sanjay.y": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        22,
+        6
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "LOGON",
+        "MAIL_RECV",
+        "MAIL_SEND",
+        "SMB_SESSION",
+        "FILE_READ"
+      ]
+    },
+    "deepa.g": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        22,
+        6
+      ],
+      "hosts": [
+        "WS-DEEPA-324",
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "LOGON",
+        "MAIL_RECV",
+        "MAIL_SEND",
+        "SMB_SESSION",
+        "FILE_READ"
+      ]
+    },
+    "kavya.k": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        22,
+        6
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "LOGON",
+        "MAIL_RECV",
+        "MAIL_SEND",
+        "SMB_SESSION",
+        "FILE_READ"
+      ]
+    },
+    "pooja.n": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "deepa.r": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "sanjay.h": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        22,
+        6
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "LOGON",
+        "MAIL_RECV",
+        "MAIL_SEND",
+        "SMB_SESSION",
+        "FILE_READ"
+      ]
+    },
+    "anil.q": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "sneha.m": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "lakshmi.d": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "WS-LAKSHMI-440",
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "sneha.b": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        22,
+        6
+      ],
+      "hosts": [
+        "WS-SNEHA-479",
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "LOGON",
+        "MAIL_RECV",
+        "MAIL_SEND",
+        "SMB_SESSION",
+        "FILE_READ"
+      ]
+    },
+    "varun.w": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        9,
+        19
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "MAIL_RECV",
+        "MAIL_SEND"
+      ]
+    },
+    "farah.d": {
+      "countries": [
+        "IN"
+      ],
+      "hours": [
+        22,
+        6
+      ],
+      "hosts": [
+        "MAIL-01"
+      ],
+      "actions": [
+        "AUTH_OK",
+        "LOGON",
+        "MAIL_RECV",
+        "MAIL_SEND",
+        "SMB_SESSION",
+        "FILE_READ"
+      ]
+    }
+  },
+  "service_accounts": {
+    "svc-backup": {
+      "logon_types": [
+        "batch"
+      ],
+      "sources": [
+        "BKP-01"
+      ],
+      "job_hours": [
+        1
+      ],
+      "admin": false
+    }
+  },
+  "hosts": {
+    "MAIL-01": {
+      "outside_peers": [
+        "192.0.2.25"
+      ],
+      "daily_upload_mb": 400
+    },
+    "DC-01": {
+      "outside_peers": [],
+      "daily_upload_mb": 30
+    },
+    "FIN-SRV-02": {
+      "outside_peers": [],
+      "daily_upload_mb": 50
+    },
+    "HR-SRV-01": {
+      "outside_peers": [],
+      "daily_upload_mb": 40
+    },
+    "BKP-01": {
+      "outside_peers": [],
+      "daily_upload_mb": 200
+    },
+    "PRINT-02": {
+      "outside_peers": [],
+      "daily_upload_mb": 5
+    },
+    "WS-PRIYA-014": {
+      "outside_peers": [],
+      "daily_upload_mb": 20
+    },
+    "WS-ARJUN-064": {
+      "outside_peers": [],
+      "daily_upload_mb": 20
+    },
+    "WS-NEHA-022": {
+      "outside_peers": [],
+      "daily_upload_mb": 20
+    },
+    "WS-AKASH-798": {
+      "outside_peers": [],
+      "daily_upload_mb": 20
+    },
+    "WS-RIYA-547": {
+      "outside_peers": [],
+      "daily_upload_mb": 20
+    },
+    "WS-RAHUL-699": {
+      "outside_peers": [],
+      "daily_upload_mb": 20
+    },
+    "WS-ANANYA-511": {
+      "outside_peers": [],
+      "daily_upload_mb": 20
+    },
+    "WS-SNEHA-213": {
+      "outside_peers": [],
+      "daily_upload_mb": 20
+    },
+    "WS-SNEHA-636": {
+      "outside_peers": [],
+      "daily_upload_mb": 20
+    },
+    "WS-NIKHIL-948": {
+      "outside_peers": [],
+      "daily_upload_mb": 20
+    },
+    "WS-GAURAV-602": {
+      "outside_peers": [],
+      "daily_upload_mb": 20
+    },
+    "WS-DEEPA-324": {
+      "outside_peers": [],
+      "daily_upload_mb": 20
+    },
+    "WS-LAKSHMI-440": {
+      "outside_peers": [],
+      "daily_upload_mb": 20
+    },
+    "WS-SNEHA-479": {
+      "outside_peers": [],
+      "daily_upload_mb": 20
+    }
+  }
+}
