@@ -42,3 +42,14 @@ def test_raw_matches_example():
     events, _ = build(7)
     e = next(e for e in events if e["action"] == "AUTH_OK" and e["ts"].endswith("03:12:17Z"))
     assert e["raw"] == "03:12:17 vpn-gw AUTH_OK user=priya.s src=203.0.113.47 geo=RO"
+
+
+def test_dos_scenario_is_one_source_flooding_one_target():
+    events, files = build(7, "dos")
+    by_id = {e["id"]: e for e in events}
+    flood = [by_id[i] for i in files["truth.json"]["planted"]]
+    assert len(flood) == 1800
+    assert {(e["src"], e["dst"], e["action"]) for e in flood} == {("203.0.113.77", "MAIL-01", "CONN_OPEN")}
+    assert max(e["ts"] for e in flood) < "2026-11-14T04:03:00Z"
+    assert len(events) == 5087 + 25 + 1800
+    assert build(7, "dos") == build(7, "dos")

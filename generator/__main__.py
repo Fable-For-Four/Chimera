@@ -1,4 +1,4 @@
-"""python -m generator --seed 7: writes the five files in data/. Same seed, same files."""
+"""python -m generator --seed 7 [--scenario dos]: writes the five files in data/ (data_dos/ for dos). Same seed, same files."""
 
 import argparse
 import json
@@ -22,13 +22,13 @@ def raw_line(e):
     return " ".join(parts)
 
 
-def build(seed):
+def build(seed, scenario_name="chain"):
     rng = random.Random(seed)
     company = scenario.build_company(rng)
     normal = noise.normal_events(rng, company)
     for e in rng.sample(normal, LATE_COUNT):
         e["received_at"] = e["ts"] + timedelta(seconds=rng.randint(180, 720))
-    attack = scenario.attack_events()
+    attack = scenario.dos_events() if scenario_name == "dos" else scenario.attack_events()
     attack_ids = {id(e) for e in attack}
 
     # Stable sort keeps generation order for ties, so the same seed gives the same file.
@@ -52,10 +52,11 @@ def build(seed):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--seed", type=int, default=7)
-    ap.add_argument("--out", default="data")
+    ap.add_argument("--scenario", choices=["chain", "dos"], default="chain")
+    ap.add_argument("--out")
     args = ap.parse_args()
-    events, files = build(args.seed)
-    out = Path(args.out)
+    events, files = build(args.seed, args.scenario)
+    out = Path(args.out or ("data" if args.scenario == "chain" else "data_dos"))
     out.mkdir(exist_ok=True)
     (out / "events.jsonl").write_text("".join(json.dumps(e) + "\n" for e in events), encoding="utf-8", newline="\n")
     for name, data in files.items():

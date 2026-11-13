@@ -25,6 +25,7 @@ SERVICE_ACCOUNT_REACH = ["BKP-01", "FIN-SRV-02", "HR-SRV-01", "DC-01"]
 ATTACKER_IP = "203.0.113.47"
 EXFIL_IP = "198.51.100.23"
 MAIL_RELAY_IP = "192.0.2.25"
+DOS_IP = "203.0.113.77"
 
 DAY_ACTIONS = ["AUTH_OK", "MAIL_RECV", "MAIL_SEND"]
 NIGHT_ACTIONS = ["AUTH_OK", "LOGON", "MAIL_RECV", "MAIL_SEND", "SMB_SESSION", "FILE_READ"]
@@ -158,3 +159,11 @@ def attack_events():
         event("04:06:01", "fw-edge", "CONN_OPEN", src="FIN-SRV-02", dst=EXFIL_IP),
         event("04:19:33", "fw-edge", "CONN_CLOSE", src="FIN-SRV-02", dst=EXFIL_IP, bytes_out=2_254_857_830),
     ]
+
+
+def dos_events(count=1800):
+    """Connection flood: one outside address opens ~10 connections a second to MAIL-01 for 3 minutes."""
+    def clock(i):
+        t = 4 * 3600 + i // 10
+        return f"{t // 3600:02d}:{t // 60 % 60:02d}:{t % 60:02d}"
+    return [event(clock(i), "fw-edge", "CONN_OPEN", src=DOS_IP, dst="MAIL-01") for i in range(count)]
