@@ -107,7 +107,8 @@ def graph(steps, chain, scored, profile, accounts, reachable, access, layout):
             node["step"] = step_of[n]
         nodes.append(node)
 
-    # Step edges first to keep the attack's direction, then account to reachable, then shared events.
+    # Step edges first to keep the attack's direction,
+    # then account to reachable, then shared events.
     pairs = [(s["from"], s["to"]) for s in steps]
     pairs += [(a, h) for a in accounts for h in access.get(a, []) if h in reachable]
     for e in scored:
