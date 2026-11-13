@@ -1,9 +1,16 @@
-import json
 from datetime import datetime
 
 from generator.__main__ import build
 
-ATTACK = ["priya.s", "svc-backup", "WS-PRIYA-014", "DC-01", "FIN-SRV-02", "203.0.113.47", "198.51.100.23"]
+ATTACK = [
+    "priya.s",
+    "svc-backup",
+    "WS-PRIYA-014",
+    "DC-01",
+    "FIN-SRV-02",
+    "203.0.113.47",
+    "198.51.100.23",
+]
 
 
 def parse(s):
@@ -49,7 +56,9 @@ def test_dos_scenario_is_one_source_flooding_one_target():
     by_id = {e["id"]: e for e in events}
     flood = [by_id[i] for i in files["truth.json"]["planted"]]
     assert len(flood) == 1800
-    assert {(e["src"], e["dst"], e["action"]) for e in flood} == {("203.0.113.77", "MAIL-01", "CONN_OPEN")}
+    assert {(e["src"], e["dst"], e["action"]) for e in flood} == {
+        ("203.0.113.77", "MAIL-01", "CONN_OPEN")
+    }
     assert max(e["ts"] for e in flood) < "2026-11-14T04:03:00Z"
     assert len(events) == 5087 + 25 + 1800
     assert build(7, "dos") == build(7, "dos")

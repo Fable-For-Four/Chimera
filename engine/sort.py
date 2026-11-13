@@ -10,7 +10,12 @@ def parse(ts):
 
 
 def sort_events(events):
-    out = [{**e, "late": (parse(e["received_at"]) - parse(e["ts"])).total_seconds() > LATE_AFTER_SECONDS}
-           for e in events]
+    out = [
+        {
+            **e,
+            "late": (parse(e["received_at"]) - parse(e["ts"])).total_seconds() > LATE_AFTER_SECONDS,
+        }
+        for e in events
+    ]
     out.sort(key=lambda e: (e["ts"], e["id"]))  # ISO timestamps sort correctly as text
     return out, f"{sum(e['late'] for e in out)} late events moved"

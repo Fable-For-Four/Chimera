@@ -1,11 +1,9 @@
-import random
 
 import pytest
 
 from engine.profile import Profile
 from engine.score import LATE_REASON, score_events
 from engine.sort import sort_events
-from generator import scenario
 from generator.__main__ import build
 
 EVENTS, FILES = build(7)
@@ -13,9 +11,22 @@ PLANTED = set(FILES["truth.json"]["planted"])
 PROFILE = Profile(FILES["history.json"])
 
 
-def ev(action, user=None, src=None, dst=None, host=None, ts="2026-11-14T03:30:00Z", late=False, **attrs):
-    return {"id": "L-X", "ts": ts, "received_at": ts, "source": "x", "action": action, "user": user,
-            "host": host, "src": src, "dst": dst, "attrs": attrs, "late": late}
+def ev(
+    action, user=None, src=None, dst=None, host=None, ts="2026-11-14T03:30:00Z", late=False, **attrs
+):
+    return {
+        "id": "L-X",
+        "ts": ts,
+        "received_at": ts,
+        "source": "x",
+        "action": action,
+        "user": user,
+        "host": host,
+        "src": src,
+        "dst": dst,
+        "attrs": attrs,
+        "late": late,
+    }
 
 
 def names(e):
@@ -36,7 +47,10 @@ def test_sort_flags_only_events_over_two_minutes_late():
     a = {**ev("HEALTH_OK"), "id": "L-2", "received_at": "2026-11-14T03:32:00Z"}
     b = {**ev("HEALTH_OK"), "id": "L-1", "received_at": "2026-11-14T03:32:01Z"}
     out, _ = sort_events([a, b])
-    assert [(e["id"], e["late"]) for e in out] == [("L-1", True), ("L-2", False)]  # tie broken by id
+    assert [(e["id"], e["late"]) for e in out] == [
+        ("L-1", True),
+        ("L-2", False),
+    ]  # tie broken by id
 
 
 # ---- Profile ----
@@ -54,19 +68,40 @@ def test_profile_outside_means_not_10_slash_8_and_not_a_machine():
 
 
 # ---- One test per rule ----
-@pytest.mark.parametrize("rule, event", [
-    ("New country for this user", ev("AUTH_OK", "priya.s", geo="RO")),
-    ("Outside the usual hours", ev("MAIL_SEND", "priya.s")),  # 03:xx, Priya works 9 to 19
-    ("First group change by this user", ev("GROUP_ADD", "priya.s", actor="priya.s", member="x", group="g")),
-    ("Service account gains admin rights", ev("GROUP_ADD", "arjun.m", actor="arjun.m", member="svc-backup", group="Domain-Admins")),
-    ("Lookup command for groups", ev("PROC_START", "arjun.m", cmd="nltest")),
-    ("Service account used by a person", ev("LOGON", "svc-backup", src="BKP-01", type="interactive")),
-    ("Wrong machine for this service account", ev("SMB_SESSION", "svc-backup", src="WS-PRIYA-014")),
-    ("Wrong time for this service account", ev("FILE_READ", "svc-backup", src="BKP-01", files=1)),
-    ("Large read of files", ev("FILE_READ", "arjun.m", files=500)),
-    ("First outside connection", ev("CONN_OPEN", src="FIN-SRV-02", dst="198.51.100.23")),
-    ("Upload far above normal", ev("CONN_CLOSE", src="FIN-SRV-02", dst="MAIL-01", bytes_out=1000 * 1024**2)),
-])
+@pytest.mark.parametrize(
+    "rule, event",
+    [
+        ("New country for this user", ev("AUTH_OK", "priya.s", geo="RO")),
+        ("Outside the usual hours", ev("MAIL_SEND", "priya.s")),  # 03:xx, Priya works 9 to 19
+        (
+            "First group change by this user",
+            ev("GROUP_ADD", "priya.s", actor="priya.s", member="x", group="g"),
+        ),
+        (
+            "Service account gains admin rights",
+            ev("GROUP_ADD", "arjun.m", actor="arjun.m", member="svc-backup", group="Domain-Admins"),
+        ),
+        ("Lookup command for groups", ev("PROC_START", "arjun.m", cmd="nltest")),
+        (
+            "Service account used by a person",
+            ev("LOGON", "svc-backup", src="BKP-01", type="interactive"),
+        ),
+        (
+            "Wrong machine for this service account",
+            ev("SMB_SESSION", "svc-backup", src="WS-PRIYA-014"),
+        ),
+        (
+            "Wrong time for this service account",
+            ev("FILE_READ", "svc-backup", src="BKP-01", files=1),
+        ),
+        ("Large read of files", ev("FILE_READ", "arjun.m", files=500)),
+        ("First outside connection", ev("CONN_OPEN", src="FIN-SRV-02", dst="198.51.100.23")),
+        (
+            "Upload far above normal",
+            ev("CONN_CLOSE", src="FIN-SRV-02", dst="MAIL-01", bytes_out=1000 * 1024**2),
+        ),
+    ],
+)
 def test_each_rule_fires(rule, event):
     assert rule in names(event)
 
@@ -81,16 +116,22 @@ def test_rules_stay_quiet_on_normal_behaviour():
 
 
 def test_failed_tries_then_success_needs_two_fails_inside_five_minutes():
-    fail = lambda t: {**ev("AUTH_FAIL", "arjun.m", geo="IN", ts=t), "id": t}
+    def fail(t):
+        return {**ev("AUTH_FAIL", "arjun.m", geo="IN", ts=t), "id": t}
+
     ok = ev("AUTH_OK", "arjun.m", geo="IN", ts="2026-11-14T03:10:00Z")
     hit, _ = score_events([fail("2026-11-14T03:06:00Z"), fail("2026-11-14T03:08:00Z"), ok], PROFILE)
-    miss, _ = score_events([fail("2026-11-14T03:04:59Z"), fail("2026-11-14T03:08:00Z"), ok], PROFILE)
+    miss, _ = score_events(
+        [fail("2026-11-14T03:04:59Z"), fail("2026-11-14T03:08:00Z"), ok], PROFILE
+    )
     assert "Failed tries, then success" in [r["name"] for r in hit[-1]["reasons"]]
     assert miss[-1]["reasons"] == []
 
 
 def test_wrap_around_hours():
-    assert names(ev("MAIL_SEND", "arjun.m", ts="2026-11-14T03:30:00Z")) == []  # night worker [22, 6]
+    assert (
+        names(ev("MAIL_SEND", "arjun.m", ts="2026-11-14T03:30:00Z")) == []
+    )  # night worker [22, 6]
     assert "Outside the usual hours" in names(ev("MAIL_SEND", "arjun.m", ts="2026-11-14T12:00:00Z"))
 
 
@@ -99,7 +140,10 @@ def test_scores_combine_and_late_events_are_discounted():
     s = score_events([odd], PROFILE)[0][0]["score"]
     assert s == round(1 - 0.75 * 0.72, 2) == 0.46
     late = score_events([{**odd, "late": True}], PROFILE)[0][0]
-    assert late["score"] == round(0.46 * 0.9, 2) and late["reasons"][-1] == {"name": LATE_REASON, "weight": -0.10}
+    assert late["score"] == round(0.46 * 0.9, 2) and late["reasons"][-1] == {
+        "name": LATE_REASON,
+        "weight": -0.10,
+    }
 
 
 # ---- The "Done when" checks on the real data ----
@@ -127,4 +171,6 @@ def test_normal_noise_stays_under_015_and_only_the_25_oddities_are_in_between():
     raised = [e for e in others if e["score"] >= 0.15]
     assert len(raised) == 25 and all(0.25 <= e["score"] <= 0.45 for e in raised)
     assert all(e["score"] == 0 for e in others if e["score"] < 0.15)
-    assert msg == "26 weak signals"  # 11 planted + 15 oddities (the 10 lookup/off-hours ones score under 0.30)
+    assert (
+        msg == "26 weak signals"
+    )  # 11 planted + 15 oddities (the 10 lookup/off-hours ones score under 0.30)

@@ -1,4 +1,7 @@
-"""python -m generator --seed 7 [--scenario dos]: writes the five files in data/ (data_dos/ for dos). Same seed, same files."""
+"""python -m generator --seed 7 [--scenario dos]: writes the five files in data/.
+
+The dos scenario writes to data_dos/ instead. Same seed, same files.
+"""
 
 import argparse
 import json
@@ -32,15 +35,29 @@ def build(seed, scenario_name="chain"):
     attack_ids = {id(e) for e in attack}
 
     # Stable sort keeps generation order for ties, so the same seed gives the same file.
-    events = sorted(normal + noise.lone_oddities(rng, company) + attack, key=lambda e: e["received_at"])
+    events = sorted(
+        normal + noise.lone_oddities(rng, company) + attack, key=lambda e: e["received_at"]
+    )
     out, planted = [], []
     for i, e in enumerate(events, 1):
         eid = f"L-{i:04d}"
         if id(e) in attack_ids:
             planted.append(eid)
-        out.append({"id": eid, "ts": iso(e["ts"]), "received_at": iso(e["received_at"]), "source": e["source"],
-                    "action": e["action"], "user": e["user"], "host": e["host"], "src": e["src"],
-                    "dst": e["dst"], "attrs": e["attrs"], "raw": raw_line(e)})
+        out.append(
+            {
+                "id": eid,
+                "ts": iso(e["ts"]),
+                "received_at": iso(e["received_at"]),
+                "source": e["source"],
+                "action": e["action"],
+                "user": e["user"],
+                "host": e["host"],
+                "src": e["src"],
+                "dst": e["dst"],
+                "attrs": e["attrs"],
+                "raw": raw_line(e),
+            }
+        )
     return out, {
         "history.json": scenario.build_history(company),
         "access.json": scenario.build_access(company),
@@ -58,7 +75,9 @@ def main():
     events, files = build(args.seed, args.scenario)
     out = Path(args.out or ("data" if args.scenario == "chain" else "data_dos"))
     out.mkdir(exist_ok=True)
-    (out / "events.jsonl").write_text("".join(json.dumps(e) + "\n" for e in events), encoding="utf-8", newline="\n")
+    (out / "events.jsonl").write_text(
+        "".join(json.dumps(e) + "\n" for e in events), encoding="utf-8", newline="\n"
+    )
     for name, data in files.items():
         (out / name).write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8", newline="\n")
     print(f"wrote {len(events)} events and {len(files)} files to {out}/")

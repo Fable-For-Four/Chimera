@@ -1,11 +1,11 @@
 import ipaddress
 import random
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from generator import scenario
 
-WINDOW_START = datetime(2026, 11, 14, 3, 0, tzinfo=timezone.utc)
-WINDOW_END = datetime(2026, 11, 14, 4, 30, tzinfo=timezone.utc)
+WINDOW_START = datetime(2026, 11, 14, 3, 0, tzinfo=UTC)
+WINDOW_END = datetime(2026, 11, 14, 4, 30, tzinfo=UTC)
 
 
 def company(seed=7):
@@ -37,7 +37,16 @@ def test_twelve_night_workers_and_priya_works_days():
 def test_twenty_machines_with_inside_addresses():
     machines = company()["machines"]
     assert len(machines) == 20
-    for name in ["MAIL-01", "DC-01", "FIN-SRV-02", "HR-SRV-01", "BKP-01", "PRINT-02", "WS-PRIYA-014", "WS-NEHA-022"]:
+    for name in [
+        "MAIL-01",
+        "DC-01",
+        "FIN-SRV-02",
+        "HR-SRV-01",
+        "BKP-01",
+        "PRINT-02",
+        "WS-PRIYA-014",
+        "WS-NEHA-022",
+    ]:
         assert name in machines
     assert len([m for m in machines if m.startswith("WS-")]) == 14
     ips = list(machines.values())
@@ -52,7 +61,10 @@ def test_history_baselines():
     assert "WS-PRIYA-014" in history["users"]["priya.s"]["hosts"]
     assert all("GROUP_ADD" not in u["actions"] for u in history["users"].values())
     assert history["service_accounts"]["svc-backup"] == {
-        "logon_types": ["batch"], "sources": ["BKP-01"], "job_hours": [1], "admin": False,
+        "logon_types": ["batch"],
+        "sources": ["BKP-01"],
+        "job_hours": [1],
+        "admin": False,
     }
     assert history["hosts"]["FIN-SRV-02"] == {"outside_peers": [], "daily_upload_mb": 50}
     assert len(history["users"]) == 50
@@ -80,28 +92,52 @@ def attack():
 def test_attack_has_twelve_events_in_step_order():
     actions = [e["action"] for e in attack()]
     assert actions == [
-        "AUTH_FAIL", "AUTH_FAIL", "AUTH_OK",
-        "PROC_START", "GROUP_ADD",
-        "LOGON", "TICKET_REQ",
-        "SMB_SESSION", "FILE_READ",
-        "DNS_QUERY", "CONN_OPEN", "CONN_CLOSE",
+        "AUTH_FAIL",
+        "AUTH_FAIL",
+        "AUTH_OK",
+        "PROC_START",
+        "GROUP_ADD",
+        "LOGON",
+        "TICKET_REQ",
+        "SMB_SESSION",
+        "FILE_READ",
+        "DNS_QUERY",
+        "CONN_OPEN",
+        "CONN_CLOSE",
     ]
 
 
 def test_attack_events_have_the_event_shape_and_sit_in_the_window():
     for e in attack():
-        assert set(e) == {"ts", "received_at", "source", "action", "user", "host", "src", "dst", "attrs"}
+        assert set(e) == {
+            "ts",
+            "received_at",
+            "source",
+            "action",
+            "user",
+            "host",
+            "src",
+            "dst",
+            "attrs",
+        }
         assert WINDOW_START <= e["ts"] <= WINDOW_END
 
 
 def test_attack_fields_needed_for_scoring_and_linking():
     events = attack()
     by_action = {e["action"]: e for e in events}
-    assert all(e["user"] == "priya.s" and e["src"] == "203.0.113.47" and e["attrs"]["geo"] == "RO" for e in events[:3])
+    assert all(
+        e["user"] == "priya.s" and e["src"] == "203.0.113.47" and e["attrs"]["geo"] == "RO"
+        for e in events[:3]
+    )
     assert by_action["PROC_START"]["user"] == "priya.s"
     assert by_action["PROC_START"]["host"] == "WS-PRIYA-014"
     assert by_action["PROC_START"]["attrs"]["cmd"] == "net-group"
-    assert by_action["GROUP_ADD"]["attrs"] == {"actor": "priya.s", "member": "svc-backup", "group": "Domain-Admins"}
+    assert by_action["GROUP_ADD"]["attrs"] == {
+        "actor": "priya.s",
+        "member": "svc-backup",
+        "group": "Domain-Admins",
+    }
     for action in ["LOGON", "TICKET_REQ", "SMB_SESSION", "FILE_READ"]:
         assert by_action[action]["user"] == "svc-backup"
         assert by_action[action]["src"] == "WS-PRIYA-014"
