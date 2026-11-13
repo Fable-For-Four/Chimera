@@ -9,6 +9,10 @@ MODE="${1:-dev}"
 
 # On Windows "python3" is often a Microsoft Store stub that fails, so test it before using it.
 if command -v python3 >/dev/null 2>&1 && python3 -c "" >/dev/null 2>&1; then PY=python3; else PY=python; fi
+if ! "$PY" -c "import sys; sys.exit(sys.version_info < (3, 11))"; then
+  echo "Python 3.11 or newer is needed. Found: $("$PY" --version 2>&1)" >&2
+  exit 1
+fi
 
 # Fail early if an old run is still holding the ports.
 for port in 8000 3000; do
@@ -23,9 +27,11 @@ if [ ! -f .env ]; then
   exit 1
 fi
 # Strip Windows line endings, or every value would end in an invisible \r.
+# eval, not source <(...): macOS ships bash 3.2, where sourcing a process substitution reads nothing.
 set -a
-source <(tr -d '\r' < .env)
+eval "$(tr -d '\r' < .env)"
 set +a
+JWT_SECRET="${JWT_SECRET:-}"
 if [ "${#JWT_SECRET}" -lt 32 ]; then
   echo "JWT_SECRET in .env must be 32 characters or more." >&2
   exit 1
@@ -55,13 +61,19 @@ stop() {
 }
 trap stop EXIT INT TERM
 
-uvicorn api.main:app --host 127.0.0.1 --port 8000 &
+# Server output goes to the screen and to logs/ (ignored by git), so a crash can be read later.
+# Each server runs in a subshell pipe, so stop() kills the server and its tee together.
+# The demo-mode build output is not logged, only the two servers.
+mkdir -p logs
+echo "=== run started $(date -u +%Y-%m-%dT%H:%M:%SZ) ===" | tee -a logs/api.log >> logs/web.log
+(PYTHONUNBUFFERED=1 uvicorn api.main:app --host 127.0.0.1 --port 8000 2>&1 | tee -a logs/api.log) &
 if [ "$MODE" = demo ]; then
   npm --prefix web run build
-  npm --prefix web start &
+  (npm --prefix web start 2>&1 | tee -a logs/web.log) &
 else
-  npm --prefix web run dev &
+  (npm --prefix web run dev 2>&1 | tee -a logs/web.log) &
 fi
 
 echo "Chimera is running at http://localhost:3000. Press Ctrl+C to stop."
+echo "Server logs: logs/api.log and logs/web.log"
 wait
