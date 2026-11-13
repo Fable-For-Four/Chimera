@@ -1,14 +1,17 @@
+import hashlib
 import os
+import secrets
 from datetime import UTC, datetime, timedelta
 
 import bcrypt
 import jwt
 from fastapi import Depends, HTTPException, Request, Response
 
-from api.db import get_db
+from api.db import get_db, now_iso
 
 COOKIE_NAME = "session"
 SESSION_SECONDS = 3600
+VERIFY_TOKEN_MINUTES = 30
 BCRYPT_COST = 12
 MAX_PASSWORD_BYTES = 72
 MIN_SECRET_LENGTH = 32
@@ -69,6 +72,48 @@ def user_out(row):
         "role": row["role"],
         "verified": row["email_verified_at"] is not None,
     }
+
+
+def hash_token(token):
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+def new_verification_token(db, user_id):
+    stamp = now_iso()
+    db.execute(
+        "UPDATE email_tokens SET used_at = ? WHERE user_id = ? AND used_at IS NULL",
+        (stamp, user_id),
+    )
+    token = secrets.token_urlsafe(32)
+    expires = datetime.now(UTC) + timedelta(minutes=VERIFY_TOKEN_MINUTES)
+    db.execute(
+        "INSERT INTO email_tokens (user_id, token_hash, expires_at) VALUES (?, ?, ?)",
+        (user_id, hash_token(token), expires.isoformat(timespec="seconds")),
+    )
+    return token
+
+
+def use_verification_token(db, token):
+    stamp = now_iso()
+    row = db.execute(
+        "SELECT id, user_id FROM email_tokens"
+        " WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?",
+        (hash_token(token), stamp),
+    ).fetchone()
+    if row is None:
+        return None
+    claimed = db.execute(
+        "UPDATE email_tokens SET used_at = ? WHERE id = ? AND used_at IS NULL",
+        (stamp, row["id"]),
+    )
+    if claimed.rowcount != 1:
+        return None
+    db.execute(
+        "UPDATE users SET email_verified_at = COALESCE(email_verified_at, ?) WHERE id = ?",
+        (stamp, row["user_id"]),
+    )
+    db.commit()
+    return db.execute("SELECT * FROM users WHERE id = ?", (row["user_id"],)).fetchone()
 
 
 def not_signed_in():

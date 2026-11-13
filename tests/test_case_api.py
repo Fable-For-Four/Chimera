@@ -8,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from api import auth, case_files, db
+from api import email as mailer
 from api.main import app
 from api.seed import seed
 
@@ -47,6 +48,7 @@ def client(monkeypatch, tmp_path):
     monkeypatch.setattr(case_files, "OUT_DIR", tmp_path / "out")
     monkeypatch.setattr(case_files, "SAMPLES_DIR", tmp_path / "samples")
     monkeypatch.setattr(case_files, "run_engine", fake_engine)
+    monkeypatch.setattr(mailer, "send_verification_email", lambda to, name, link: None)
     with TestClient(app) as c:
         conn = db.connect()
         seed(conn, PASSWORD)

@@ -7,6 +7,7 @@ from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
 from api import db
+from api import email as mailer
 from api.main import app
 from api.permissions import require
 from api.seed import seed
@@ -36,6 +37,7 @@ def users_route(user=Depends(require("user:manage"))):
 def client(monkeypatch, tmp_path):
     monkeypatch.setenv("JWT_SECRET", SECRET)
     monkeypatch.setattr(db, "DB_PATH", tmp_path / "test.db")
+    monkeypatch.setattr(mailer, "send_verification_email", lambda to, name, link: None)
     with TestClient(app) as c:
         conn = db.connect()
         seed(conn, PASSWORD)
@@ -242,7 +244,8 @@ def test_unverified_user_is_told_to_confirm_email(client):
     assert r.json() == {"detail": "Confirm your email first"}
 
 
-def test_not_signed_in_is_401_before_permission_check():
+def test_not_signed_in_is_401_before_permission_check(monkeypatch, tmp_path):
+    monkeypatch.setattr(db, "DB_PATH", tmp_path / "test.db")
     assert TestClient(perm_app).post("/approve").status_code == 401
 
 
