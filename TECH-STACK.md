@@ -54,7 +54,7 @@ No pandas, no NumPy, no ML library. The data is 5,000 rows and the logic is rule
 
 | Tool | Use |
 |---|---|
-| **`fastapi`** | The web server: routes, request checks, shared sign-in and permission checks, serving the UI files. |
+| **`fastapi`** | The API server only: routes under `/api`, request checks, shared sign-in and permission checks. It never serves UI files. The frontend is Next.js only. |
 | **`uvicorn`** | Runs the FastAPI app. |
 | **`pydantic`** (comes with FastAPI) | Checks request bodies and rejects bad ones with `422`. |
 | **`email-validator`** | Lets `pydantic` check that an email address is well formed. |
@@ -121,7 +121,8 @@ No Tailwind, no component library, no state library, no data-fetching library, n
 | **`venv`** (built in) | A private Python environment in `.venv/`. |
 | **`pip` and `requirements.txt`** | Installs the packages. |
 | **`npm` and `web/package.json`** | Installs the frontend packages. |
-| **`run.sh`** | Creates the venv, installs both sides, loads `.env`, generates data, runs the engine, seeds users, starts FastAPI and Next.js. |
+| **`run.sh`** | Creates the venv, installs both sides, loads `.env`, generates data, runs the engine, seeds users, starts FastAPI and Next.js. On Windows, run it from Git Bash. `./run.sh demo` uses the production UI build. |
+| **`.gitattributes`** | Keeps `*.sh` and `.env*` on Unix line endings, so bash works on Windows checkouts. |
 | **`.env`** | Local secrets. Never committed. |
 | **`.env.example`** | The variable names with empty values, committed. |
 | **`.gitignore`** | Keeps `.venv/`, `.env`, `app.db`, `out/`, `__pycache__/`, `web/node_modules/` and `web/.next/` out of the repo. |
@@ -212,5 +213,5 @@ Commands:
 ## Open decisions
 
 - **Email sender:** with Resend's test sender, mail may only reach the Resend account owner's address. Check this in the Resend dashboard. To reach any inbox, verify a domain there and set `EMAIL_FROM`.
-- **UI base:** the RedString mock or `CHIMERA.html`. Both files assume the RedString mock.
-- **Product name:** RedString or Chimera.
+- **UI base:** the Chimera mock, saved as `docs/mock.html`. **Not in the repo yet.** Whoever has it commits it before 03:00, because Lane C styles and Lane A's `layout.json` both copy from it.
+- **Product name:** Chimera (decided).

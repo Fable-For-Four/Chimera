@@ -1,4 +1,4 @@
-# RedString: build plan
+# Chimera: build plan
 
 HackInnovision 2026, Track C (Chimera). Team of 4, each driving one coding agent. Submission at 09:30, presentations from 10:00.
 
@@ -21,7 +21,7 @@ Read this file and `TECH-STACK.md` before writing code.
 - A task is finished when its "Done when" checks pass and `pytest` is green.
 - One task per branch, small pull requests, never push to `main`.
 - Never commit secrets, `.env`, `app.db`, or anything in `out/`.
-- No comments in code or tests, except one line where removing it would invite a real bug.
+- Short comments only where the *why* is not obvious from the code. One or two lines, never an essay. Code should read clearly without them.
 - Every number shown in the UI comes from the API. Nothing is hardcoded in the UI except labels.
 
 ## 1. What we are building
@@ -221,37 +221,41 @@ run.sh  requirements.txt  .env.example  .gitignore  README.md  PLAN.md  TECH-STA
 
 ### Normal noise, about 5,100 events
 
-- Comes only from the 12 night workers and from machine jobs (mail, health checks, cron, print cleanup, the 01:00-style backup verify at 03:20).
+- Comes only from the 12 night workers and from machine jobs (mail, health checks, cron, print cleanup, and a backup verify job at 03:20).
+- The 03:20 backup verify is only `JOB_START` and `JOB_END` events by `svc-backup` from `BKP-01`. Those two actions are exempt from the "Wrong time" rule, so the job scores 0 even though `svc-backup`'s `job_hours` is `[1]`.
 - Every normal event stays inside its user's or machine's baseline, so it scores under 0.15.
 - Roughly even over time, about 285 events every 5 minutes.
 
 ### Lone oddities, 25 events
 
 - Each breaks exactly one rule for an unrelated user or machine, for example one night worker signing in from a new device.
-- They score between 0.25 and 0.45 and share no user or workstation with the attack. They become the weak signals that are scored but not linked.
+- They score between 0.25 and 0.45 and share no entity at all with the attack: no user, machine (servers included) or address. They become the weak signals that are scored but not linked.
 
 ### The attack, 12 planted events
 
 | Step | Time | Events | ATT&CK (verify the IDs) |
 |---|---|---|---|
-| 1 | 03:09 to 03:12 | Two `AUTH_FAIL` then `AUTH_OK` for `priya.s` from `203.0.113.47`, `geo=RO` | T1078 Valid Accounts |
-| 2 | 03:38, 03:41 | `PROC_START` on `WS-PRIYA-014` with `cmd=net-group`. `GROUP_ADD` on `DC-01`, `actor=priya.s`, `member=svc-backup`, `group=Domain-Admins` | T1098 Account Manipulation |
-| 3 | 03:44, 03:45 | `LOGON type=interactive` by `svc-backup` on `DC-01` from `WS-PRIYA-014`. `TICKET_REQ` for `cifs/FIN-SRV-02` | T1021 Remote Services |
-| 4 | 03:52, 03:53 | `SMB_SESSION` then `FILE_READ` of `/finance/payroll/2026`, `files=1412`, by `svc-backup` on `FIN-SRV-02` from `WS-PRIYA-014` | T1039 Data from Network Shared Drive |
-| 5 | 04:05 to 04:19 | `DNS_QUERY` from `FIN-SRV-02`. `CONN_OPEN` to `198.51.100.23:443`. `CONN_CLOSE` with `bytes_out` of about 2.1 GB | T1048 Exfiltration Over Alternative Protocol |
+| 1 | 03:09 to 03:12 | Two `AUTH_FAIL` then `AUTH_OK` for `user=priya.s` from `src=203.0.113.47`, `geo=RO` | T1078 Valid Accounts |
+| 2 | 03:38, 03:41 | `PROC_START` with `user=priya.s`, `host=WS-PRIYA-014`, `cmd=net-group`. `GROUP_ADD` with `user=priya.s`, `host=DC-01`, `actor=priya.s`, `member=svc-backup`, `group=Domain-Admins` | T1098.007 Additional Local or Domain Groups |
+| 3 | 03:44, 03:45 | `LOGON type=interactive` with `user=svc-backup`, `host=DC-01`, `src=WS-PRIYA-014`. `TICKET_REQ` with `user=svc-backup`, `host=DC-01`, `src=WS-PRIYA-014`, `service=cifs/FIN-SRV-02` | T1021 Remote Services |
+| 4 | 03:52, 03:53 | `SMB_SESSION` then `FILE_READ` of `path=/finance/payroll/2026`, `files=1412`, with `user=svc-backup`, `host=FIN-SRV-02`, `src=WS-PRIYA-014` | T1039 Data from Network Shared Drive |
+| 5 | 04:05 to 04:19 | `DNS_QUERY` with `src=FIN-SRV-02`. `CONN_OPEN` and `CONN_CLOSE` with `src=FIN-SRV-02`, `dst=198.51.100.23:443`, `CONN_CLOSE` with `bytes_out` of about 2.1 GB | T1048.002 Exfiltration Over Asymmetric Encrypted Non-C2 Protocol |
+
+Every field listed above must be set. Each one is needed for the event to reach 0.30 and to link to its neighbours. The step 2 `PROC_START` (`net-group`) is really discovery (T1069), but it is shown inside the privilege step because it leads straight to the group change.
 
 ### Deliberate mess
 
-- 212 events get a `received_at` 3 to 12 minutes after `ts`, and the file is written in `received_at` order. The step 3 `LOGON` is one of them, 6 minutes late, so it appears after the `TICKET_REQ`.
+- 212 events get a `received_at` 3 to 12 minutes after `ts`, and the file is written in `received_at` order. The step 3 `LOGON` is one of them, 6 minutes late, so it appears after the `TICKET_REQ`. The other 211 are picked from normal noise only, never from planted events or lone oddities, because the late penalty (×0.9) could push a 0.30 event under the link threshold.
 - The `DNS_QUERY` matches no scoring rule. It is the planted event the engine is expected to miss.
 - Each attack step stays under the old alert limits (section 6.1).
+- No attack entity (`priya.s`, `svc-backup`, `WS-PRIYA-014`, `DC-01`, `FIN-SRV-02`, `203.0.113.47`, `198.51.100.23`) may appear in more than 5% of all events, or Link treats it as a hub and the chain breaks. Spread the `dc` and `files` noise across other machines to keep `DC-01` and `FIN-SRV-02` under the limit.
 
 ### IDs and layout
 
 - IDs are `L-0001` upward in arrival order.
 - `layout.json` gives positions for the attack's nodes and the six named normal nodes. Copy the positions from `NODES` in `docs/mock.html`.
 
-**Done when:** two runs with the same seed give identical files. The file has 5,100 to 5,200 events. `truth.json` lists 12 IDs. The step 3 `LOGON` appears after the `TICKET_REQ` in the file but has the earlier `ts`.
+**Done when:** two runs with the same seed give identical files. The file has 5,100 to 5,200 events. `truth.json` lists 12 IDs. The step 3 `LOGON` appears after the `TICKET_REQ` in the file but has the earlier `ts`. No attack entity is in more than 5% of events. No planted event other than the `LOGON` is late.
 
 ## 6. The engine
 
@@ -328,10 +332,10 @@ Each rule checks one event against its baseline. A rule that matches adds its na
 | Stage | Actions | Technique | `from` | `to` |
 |---|---|---|---|---|
 | Initial access | `AUTH_FAIL`, `AUTH_OK` | T1078 Valid Accounts | `src` | `user` |
-| Privilege escalation | `PROC_START`, `GROUP_ADD` | T1098 Account Manipulation | `attrs.actor` | `attrs.member` |
+| Privilege escalation | `PROC_START`, `GROUP_ADD` | T1098.007 Additional Domain Groups | `attrs.actor` | `attrs.member` |
 | Lateral movement | `LOGON`, `TICKET_REQ` | T1021 Remote Services | `user` | `host` |
 | Collection | `SMB_SESSION`, `FILE_READ` | T1039 Network Shared Drive | `user` | `host` |
-| Exfiltration | `CONN_OPEN`, `CONN_CLOSE`, `DNS_QUERY` | T1048 Alternative Protocol | `src` | `dst` |
+| Exfiltration | `CONN_OPEN`, `CONN_CLOSE`, `DNS_QUERY` | T1048.002 Encrypted Non-C2 Protocol | `src` | `dst` |
 
 7. **Steps:** one step per stage that has events, in the stage order above. `from` and `to` come from the step's highest-scoring event. `time` is that event's `ts`. `minute` is minutes after the window start. Exhibits are the step's events in time order. Signals are the reasons of its events, each once, highest weight first.
 8. **Step confidence:** `1 - (1-s1)(1-s2)…` over the step's event scores, capped at 0.97, as a whole percentage.
@@ -412,6 +416,7 @@ All nine files are written by `engine.run`. Nothing is computed during the demo.
 ### 6.11 Run (`run.py`)
 
 - `run(data_dir, out_dir)` runs intake, then the pipeline, then truth, then stress, timing each of the six named stages for `stages`.
+- It is built early (task A5) so integration can start. A stage that is not merged yet leaves its fields as empty lists or `null`, which the contract allows. Lane A adds each call as Challenge, Report, truth and stress merge.
 - The six stages reported are Sort, Profile, Score, Link, Challenge, Report. Verdict counts inside Link's time.
 - Prints the chain: one line per step with time, stage, confidence and exhibit IDs.
 
@@ -466,66 +471,78 @@ A Next.js app in `web/`, rebuilt from `docs/mock.html`. Keep the mock's look, it
 
 ## 8. Task board
 
-Four lanes, one person and one agent each. Tasks in a lane run in order. Lanes run side by side. Times are estimates for an agent with a person reviewing.
+Four lanes, one person and one agent each. Tasks in a lane run in order, lanes run side by side.
 
-**Clock:** start 02:30, break 04:00 to 04:30, submit 09:30.
+**Re-planned at 02:40 for the time actually left.** The slots below are fixed. If a task runs over its slot, cut scope inside that task first, then use the cut order. The clock does not move.
+
+**Clock:** build 03:00 to 08:30, break 04:00 to 04:30, feature freeze 08:30, submit 09:30. That gives each person 300 minutes of build time.
+
+Task IDs are kept from the earlier board so references elsewhere still work. B2 and B3 moved to Lane D, and Challenge and truth moved to Lane B (as B7), to even out the load.
 
 ### Lane A: data and engine core
 
-| Task | Owns | Spec | Needs | Est. |
+| Slot | Task | Owns | Spec | Needs |
 |---|---|---|---|---|
-| **A1** Generator | `generator/`, `data/` | Section 5, 4.1, 4.2 | none | 60 min |
-| **A2** Sort, Profile, Score | `engine/sort.py`, `profile.py`, `score.py`, their tests | 6.2 to 6.4 | A1 | 50 min |
-| **A3** Link and Verdict | `engine/link.py`, `verdict.py`, their tests | 6.5, 6.6 | A2 | 75 min |
-| **A4** Challenge, Report, truth | `engine/challenge.py`, `report.py`, `truth.py`, their tests | 6.7 to 6.9 | A3 | 45 min |
-| **A5** Stress and run | `engine/stress.py`, `run.py`, their tests | 6.10, 6.11 | A4 | 45 min |
+| 03:00 to 04:00 | **A1** Generator | `generator/`, `data/` | Section 5, 4.1, 4.2 | none |
+| 04:30 to 05:20 | **A2** Sort, Profile, Score | `engine/sort.py`, `profile.py`, `score.py`, their tests | 6.2 to 6.4 | A1 |
+| 05:20 to 06:35 | **A3** Link and Verdict | `engine/link.py`, `verdict.py`, their tests | 6.5, 6.6 | A2 |
+| 06:35 to 06:55 | **A5** Run | `engine/run.py`, its test | 6.11 | A3 |
+| 06:55 to 07:25 | **A4** Report | `engine/report.py`, its test | 6.8 | A3 |
+| 07:25 to 08:05 | **A6** Stress | `engine/stress.py`, its test | 6.10 | A5 |
+| 08:05 to 08:30 | Fixes from integration | | | |
 
-### Lane B: scaffold and API
+### Lane B: scaffold, API, two engine stages
 
-| Task | Owns | Spec | Needs | Est. |
+| Slot | Task | Owns | Spec | Needs |
 |---|---|---|---|---|
-| **B1** Scaffold | `run.sh` (starts both servers), `requirements.txt`, `.gitignore`, `.env.example`, `README.md` skeleton | `TECH-STACK.md` | none | 20 min |
-| **B2** Sample files and shape check | `tests/fixtures/*.sample.json`, `tests/test_contract.py` | 4.3, 4.4 | none | 30 min |
-| **B3** Intake | `engine/intake.py`, its test | 6.1 | A1 | 30 min |
-| **B4** Accounts | `api/db.py`, `auth.py`, `permissions.py`, `seed.py`, `main.py`, `tests/test_auth.py` | 14.1 to 14.8, tests 1 to 11 | B1 | 75 min |
-| **B5** Case routes | `api/main.py` routes, `tests/test_case_api.py` | 14.6, 14.7 | B2, B4 | 45 min |
-| **B6** Email verification | `api/email.py`, changes in `auth.py`, tests 12 to 18 | 14.12 | B4 | 60 min |
+| 03:00 to 03:20 | **B1** Scaffold | `run.sh`, `requirements.txt`, `.gitignore`, `.gitattributes`, `.env.example` (all already written: check and merge them), `README.md` skeleton | `TECH-STACK.md` | none |
+| 03:20 to 04:00, 04:30 to 05:05 | **B4** Accounts | `api/db.py`, `auth.py`, `permissions.py`, `seed.py`, `main.py`, `tests/test_auth.py` | 14.1 to 14.8, tests 1 to 11 | B1 |
+| 05:05 to 05:50 | **B5** Case routes | `api/main.py` routes, `tests/test_case_api.py` | 14.6, 14.7 | B2, B4 |
+| 05:50 to 06:50 | **B6** Email verification | `api/email.py`, changes in `auth.py`, tests 12 to 18 | 14.12 | B4 |
+| 06:50 to 07:30 | **B7** Challenge and truth | `engine/challenge.py`, `truth.py`, their tests | 6.7, 6.9 | A3 (build against `case.sample.json` until A3 merges) |
+| 07:30 to 08:30 | Run button end to end, fixes | | | |
 
 Until A5 is merged, B5 serves the sample files.
 
 ### Lane C: UI shell and main screens
 
-| Task | Owns | Spec | Needs | Est. |
+| Slot | Task | Owns | Spec | Needs |
 |---|---|---|---|---|
-| **C1** Next.js app and shell | `web/package.json`, `next.config.ts`, `app/layout.tsx`, `app/globals.css`, `components/Shell.tsx`, `lib/api.ts`, `lib/types.ts`, `lib/state.tsx` | Section 7, Structure | B2 | 90 min |
-| **C2** Start, Run, Overview | `app/page.tsx`, `components/Start.tsx`, `components/Overview.tsx` | Section 7 | C1 | 60 min |
-| **C3** Attack graph and evidence | `app/graph/page.tsx`, `components/EvidenceDrawer.tsx` | Section 7 | C1 | 75 min |
-| **C4** Stress test | `app/stress/page.tsx` | Section 7 | C3 | 45 min |
+| 03:00 to 04:00, 04:30 to 05:00 | **C1** Next.js app and shell | `web/package.json`, `next.config.ts`, `app/layout.tsx`, `app/globals.css`, `components/Shell.tsx`, `lib/api.ts`, `lib/types.ts`, `lib/state.tsx` | Section 7, Structure | B2 from 03:30 |
+| 05:00 to 06:00 | **C2** Start, Run, Overview | `app/page.tsx`, `components/Start.tsx`, `components/Overview.tsx` | Section 7 | C1 |
+| 06:00 to 07:15 | **C3** Attack graph and evidence | `app/graph/page.tsx`, `components/EvidenceDrawer.tsx` | Section 7 | C1 |
+| 07:15 to 08:00 | **C4** Stress test | `app/stress/page.tsx` | Section 7 | C3 |
+| 08:00 to 08:30 | Layout check at 1080p and 1440p (`/deploy`), fixes | | | |
 
-C1 runs `npm install`, which needs internet. Do it first, while the venue Wi-Fi works.
+C1 runs `npm install` in its first 10 minutes, while the venue Wi-Fi works.
 
 Until B5 is merged, `lib/api.ts` returns the sample files, copied into `web/public/samples/`.
 
-### Lane D: sign-in screens, other screens, docs
+### Lane D: contract, intake, sign-in screens, other screens, docs
 
-| Task | Owns | Spec | Needs | Est. |
+| Slot | Task | Owns | Spec | Needs |
 |---|---|---|---|---|
-| **D1** Sign-in, sign-up, check your email | `app/login/page.tsx`, `app/verify/page.tsx` | 14.9, 14.12 | C1 | 60 min |
-| **D2** Evidence log | `app/logs/page.tsx` | Section 7 | C1 | 40 min |
-| **D3** Report, approvals, Ask the case | `app/report/page.tsx`, `components/ApprovalsPanel.tsx`, `components/QuestionsPanel.tsx` | Section 7 | C2 | 60 min |
-| **D4** Admin screen | `app/admin/page.tsx` | Section 7 | B5 | 45 min |
-
-Lane D cannot start until C1 is merged. Until then, the Lane D person reviews Lane C's pull request and prepares the README.
-| **D5** README and demo run-through | `README.md` | Sections 11, 13 | everything | 30 min |
+| 03:00 to 03:30 | **B2** Sample files and shape check | `tests/fixtures/*.sample.json`, `tests/test_contract.py` | 4.3, 4.4 | none |
+| 03:30 to 04:00 | Review B1 and C1 diffs. Check the ATT&CK IDs on attack.mitre.org. | | 13 | |
+| 04:30 to 05:00 | **B3** Intake | `engine/intake.py`, its test | 6.1 | A1 |
+| 05:00 to 06:00 | **D1** Sign-in, sign-up, check your email | `app/login/page.tsx`, `app/verify/page.tsx` | 14.9, 14.12 | C1 |
+| 06:00 to 06:40 | **D2** Evidence log | `app/logs/page.tsx` | Section 7 | C1 |
+| 06:40 to 07:40 | **D3** Report, approvals, Ask the case | `app/report/page.tsx`, `components/ApprovalsPanel.tsx`, `components/QuestionsPanel.tsx` | Section 7 | C2 |
+| 07:40 to 08:25 | **D4** Admin screen (first to cut) | `app/admin/page.tsx` | Section 7 | B5 |
+| 08:30 to 09:00 | **D5** README and demo run-through | `README.md` | Sections 11, 13 | everything |
 
 ### Checkpoints
 
 | Time | Check | If it fails |
 |---|---|---|
-| **04:00** | `python -m engine.run` prints the 5 steps (A1 to A3). UI shows Start and Overview from the sample (C1, C2). Seeded analyst can sign in (B4). | Simplify the scenario until Link works. Nothing else matters more. |
-| **06:00** | A signed-in analyst presses Run and the real engine output drives Start, Overview and the graph. | Everyone stops new work and integrates. |
-| **07:30** | Stress, evidence log, report, approvals and email verification work end to end. | Apply the cut order below. |
-| **08:30** | **Feature freeze.** README, two demo rehearsals, backup recording. | Bug fixes only. |
+| **04:00** | Generator passes its Done-when checks (A1). Scaffold and sample files merged (B1, B2). `npm install` done (C1). | Drop the lone oddities from the generator and add them back after A3. |
+| **05:30** | Seeded analyst can sign in (B4). Scores on the real data match 6.4 (A2). Intake merged (B3). | Lane B: cut sign-up (cut order 5). Lane A: fix scoring before anything else. |
+| **06:00** | Start and Overview render from the sample files through the API (B5, C2). | Lane C keeps building on the samples. Integration waits for 07:15. |
+| **06:45** | Link on the real data gives the 5 steps with 11 events (A3 tests pass). | Simplify the scenario until Link works. Nothing else matters more. |
+| **07:15** | A signed-in analyst presses Run and the real engine output drives Start, Overview and the graph. | Everyone stops new work and integrates. |
+| **08:00** | Stress, evidence log, report, approvals and email verification work end to end. | Apply the cut order below. |
+| **08:30** | **Feature freeze.** Bug fixes only. | |
+| **08:30 to 09:15** | README, two demo rehearsals, backup recording by 09:15. | |
 | **09:30** | Submit. | |
 
 ### Cut order, if behind
@@ -542,13 +559,14 @@ Cut from the top. Never cut the engine, the graph, the evidence drawer or the si
 ### How two agents avoid collisions
 
 - A task touches only the files it owns. `api/main.py` is shared by B4, B5 and B6, which run in order in one lane.
+- `engine/run.py` belongs to Lane A. B3 and B7 do not edit it. Lane A adds their calls when they merge.
 - `ApprovalsPanel.tsx` and `QuestionsPanel.tsx` belong to D3. C2 leaves two empty slots for them in `Overview.tsx`.
 - `Shell.tsx`, `lib/` and `globals.css` belong to C1. Another task that needs a change there asks the Lane C person.
 - A change to a contract needs a message to the team and an update to the sample files first.
 
 ## 9. Extra features if there is time
 
-Ranked by how much they raise the chance of winning per hour spent. Start only after the 07:30 checkpoint passes. Stop at the freeze.
+Ranked by how much they raise the chance of winning per hour spent. With the re-planned clock there is no slot for these. Start one only if your lane's tasks are all merged and the 08:00 checkpoint has passed. Realistically only #9 (20 min) fits. Stop at the freeze.
 
 | # | Feature | Why it helps | Time |
 |---|---|---|---|
@@ -608,7 +626,7 @@ Questions to prepare for:
 
 | Risk | Fallback |
 |---|---|
-| Linking does not find the chain by 04:00 | Narrow the time window and the scenario until it does. A correct small chain beats a broken clever one. |
+| Linking does not find the chain by 06:45 | Narrow the time window and the scenario until it does. A correct small chain beats a broken clever one. |
 | Engine and UI disagree on the JSON | The sample files and `tests/test_contract.py` are the reference. The 06:00 checkpoint catches the rest. |
 | Two agents edit the same file | File ownership in section 8. |
 | Stress runs are slow | They are written by `engine.run` ahead of time. Nothing is computed during the demo. |
@@ -736,7 +754,7 @@ Rules:
 
 | Email | Role | Password |
 |---|---|---|
-| `admin@acme.test` | Admin | from `SEED_PASSWORD`, default `chimera-demo-1` |
+| `admin@acme.test` | Admin | from `SEED_PASSWORD`, default `chimera-demo-1` (a known demo-only default, expected by the deployment check) |
 | `analyst@acme.test` | Analyst | same |
 | `viewer@acme.test` | Viewer | same |
 

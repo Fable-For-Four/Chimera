@@ -1,0 +1,9 @@
+networkx
+fastapi
+uvicorn
+bcrypt
+PyJWT
+resend
+email-validator
+pytest
+httpx

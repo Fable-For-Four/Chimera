@@ -1,0 +1,30 @@
+# Secrets and local data
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+app.db
+
+# Generated engine output (data/ is committed on purpose)
+out/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# Next.js (package-lock.json is committed on purpose)
+web/node_modules/
+web/.next/
+web/next-env.d.ts
+
+# Logs and OS junk
+*.log
+.DS_Store
+Thumbs.db
+
+# Personal Claude settings (shared ones in .claude/ stay tracked)
+.claude/settings.local.json
