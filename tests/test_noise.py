@@ -14,7 +14,14 @@ def setup(seed=7):
 
 
 def entities(e):
-    values = [e["user"], e["host"], e["src"], e["dst"], e["attrs"].get("actor"), e["attrs"].get("member")]
+    values = [
+        e["user"],
+        e["host"],
+        e["src"],
+        e["dst"],
+        e["attrs"].get("actor"),
+        e["attrs"].get("member"),
+    ]
     return {v for v in values if v}
 
 
@@ -64,7 +71,10 @@ def test_noise_stays_inside_every_baseline():
         if e["action"] in ("CONN_OPEN", "CONN_CLOSE") and is_outside(e["dst"], company):
             assert e["dst"] in history["hosts"][e["src"]]["outside_peers"]
         if e["action"] == "CONN_CLOSE":
-            assert e["attrs"]["bytes_out"] < 20 * history["hosts"][e["src"]]["daily_upload_mb"] * 1024**2
+            assert (
+                e["attrs"]["bytes_out"]
+                < 20 * history["hosts"][e["src"]]["daily_upload_mb"] * 1024**2
+            )
 
 
 def test_backup_verify_runs_at_0320_as_job_events_only():
@@ -79,7 +89,15 @@ def test_no_attack_entity_is_a_hub():
     all_events = normal + odd + scenario.attack_events()
     counts = Counter(v for e in all_events for v in entities(e))
     limit = 0.05 * len(all_events)
-    for name in ["priya.s", "svc-backup", "WS-PRIYA-014", "DC-01", "FIN-SRV-02", "203.0.113.47", "198.51.100.23"]:
+    for name in [
+        "priya.s",
+        "svc-backup",
+        "WS-PRIYA-014",
+        "DC-01",
+        "FIN-SRV-02",
+        "203.0.113.47",
+        "198.51.100.23",
+    ]:
         assert counts[name] < limit, (name, counts[name], limit)
 
 

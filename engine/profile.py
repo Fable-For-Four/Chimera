@@ -26,4 +26,5 @@ class Profile:
         return ipaddress.ip_address(address) not in INSIDE
 
     def message(self):
-        return f"{len(self.users) + len(self.service_accounts) + len(self.hosts)} baselines from 30 days"
+        count = len(self.users) + len(self.service_accounts) + len(self.hosts)
+        return f"{count} baselines from 30 days"
