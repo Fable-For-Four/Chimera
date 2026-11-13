@@ -47,6 +47,17 @@ It investigates after the fact. It does not block anything and does not watch a 
 8. An analyst approves actions. Each approval records who and when.
 9. An admin changes roles. A viewer can read but not run or approve.
 
+### Who uses what
+
+| Who | Role | What they do in Chimera |
+|---|---|---|
+| Security analyst | Analyst | Presses Run, follows the chain with its evidence, checks the stress test, approves containment actions |
+| Manager | Viewer | Reads the verdict, headline and report. Cannot run or approve |
+| Admin | Admin | Changes roles and reviews the approval history: who approved what, and when |
+| Auditor or compliance | Viewer | Uses the cited report and the approval trail as proof of how the incident was handled |
+| IT or ops (after the hackathon) | Analyst | Sees which log sources went quiet (log gaps, section 9) and feeds in logs from their own systems (upload) |
+| Judges | | Watch 5,000 innocent lines become one proven story, then see it hold up as logs are deleted |
+
 ## 2. How the judging criteria map to features
 
 | Criterion | Feature that earns it |
@@ -56,6 +67,27 @@ It investigates after the fact. It does not block anything and does not watch a 
 | Uncertainty and robustness | Stress test, late-log handling, confidence on every step, "what the logs cannot prove" |
 | Execution and explainability | Exhibits (log lines) behind every step, citations in the report, human approval for actions |
 | Innovation and usability | Attack replay, product-quality UI, score against the planted attack |
+
+### Chimera vs Sentry and SIEM tools
+
+Judges may ask "isn't this just Sentry?". It is not.
+
+| | Sentry | Chimera |
+|---|---|---|
+| Question it answers | Which line of my code crashed? | Did someone break in, how, and can we prove it? |
+| Who uses it | Developers | Security analysts and their managers |
+| Input | An SDK inside one app | Logs from many systems: VPN, domain controller, file servers, firewall |
+| What it looks at | One error at a time | Many events that each look innocent, joined across users, machines and time |
+| Output | Stack trace and error counts | Attack chain, evidence behind every claim, confidence, innocent explanations, actions a person approves |
+
+Our real neighbours are SIEM tools such as Splunk and Microsoft Sentinel. Chimera's edge over them:
+
+- **Explainable.** Every sentence in the report cites a log line.
+- **Honest about uncertainty.** Confidence on every step, the stress test, the weakest step and "what the logs cannot prove".
+- **Argues against itself.** Innocent explanations are tested and ranked before anyone is accused.
+- **Scored against the truth.** We planted the attack and show exactly what was found and what was missed.
+
+Features that sharpen the difference are in section 9 (log gap detection, bring your own logs, earliest moment, a second attack) and section 15 (reading real customer logs).
 
 ## 3. Architecture
 
@@ -81,6 +113,12 @@ UI (Next.js, calling the API)   ┘
 
 The detection logic is plain deterministic code. No LLM is needed for any must-have feature.
 
+### When a server crashes
+
+- `./run.sh` sends each server's output to the screen and to `logs/api.log` and `logs/web.log`, so the error behind a crash can be read after the terminal is closed. `logs/` is ignored by git.
+- No investigation data is lost. The engine reads `data/` and writes `out/`, so it can always run again. The API holds one lock for reads and runs, so nobody reads a half-written case.
+- With `RESEND_API_KEY` unset, `logs/api.log` holds verification links (14.12). It stays on the laptop and is never shared or committed.
+
 ### Repo layout
 
 ```
@@ -88,8 +126,10 @@ generator/      __main__.py scenario.py noise.py
 engine/         sort.py profile.py score.py link.py verdict.py challenge.py report.py
                 intake.py stress.py truth.py run.py
 data/           events.jsonl truth.json access.json history.json layout.json   (generated, committed)
+data_dos/       the same five files for the DoS scenario (section 5, extra)    (generated, committed)
 out/            intake.json case.json stress/*.json                            (generated, not committed)
-api/            main.py auth.py permissions.py db.py email.py seed.py
+logs/           api.log web.log, written by run.sh                             (not committed)
+api/            main.py auth.py permissions.py db.py email.py seed.py case_files.py
 web/            the Next.js app
   app/          layout.tsx globals.css page.tsx
                 login/ verify/ graph/ logs/ stress/ report/ admin/   (one page.tsx each)
@@ -97,8 +137,12 @@ web/            the Next.js app
   lib/          api.ts types.ts state.tsx
   next.config.ts package.json
 tests/          fixtures/case.sample.json fixtures/intake.sample.json test_*.py
-run.sh  requirements.txt  .env.example  .gitignore  README.md  PLAN.md  TECH-STACK.md
+.github/        workflows/ci.yml: pytest on Linux (Python 3.11 and 3.14) and Windows (3.11), web build
+run.sh  check.sh  requirements.txt (exact pins)  pytest.ini  ruff.toml
+.env.example  .gitignore  .gitattributes  README.md  PLAN.md  TECH-STACK.md
 ```
+
+`check.sh` runs the developer checks, like npm scripts: `setup`, `test`, `lint`, `fix`, `format`, `validate`, `web`. With no argument it runs every check that does not change files.
 
 ## 4. The data contracts
 
@@ -265,6 +309,15 @@ Every field listed above must be set. Each one is needed for the event to reach 
 | `neha.k` | [800, 400] | `WS-NEHA-022` | [690, 400] |
 
 **Done when:** two runs with the same seed give identical files. The file has 5,100 to 5,200 events. `truth.json` lists 12 IDs. The step 3 `LOGON` appears after the `TICKET_REQ` in the file but has the earlier `ts`. No attack entity is in more than 5% of events. No planted event other than the `LOGON` is late.
+
+### Extra scenario: DoS (`data_dos/`)
+
+Added by A1 beyond this plan, in its own commit so it can be reverted alone. It is the "second attack" from section 9. The data and the `--scenario dos` flag are already done on `person1/a1-generator`; only the engine work below is left.
+
+- `python -m generator --seed 7 --scenario dos` writes `data_dos/`: the same noise and oddities plus 1,800 `CONN_OPEN` events. One outside address, `203.0.113.77`, sends about 10 connections a second to `MAIL-01` from 04:00:00 to 04:02:59. `truth.json` lists all 1,800.
+- It uses only existing actions, so section 4.1 is unchanged.
+- **The engine needs work the plan does not include:** a rate rule ("one source, one target, many connections per minute"), and an exception to the 5% hub rule, because `MAIL-01` and the attacker each appear in over 25% of events.
+- **Start this only after the 06:45 checkpoint passes** with the payroll chain. It must not take time from A2 or A3.
 
 ## 6. The engine
 
@@ -573,6 +626,30 @@ Cut from the top. Never cut the engine, the graph, the evidence drawer or the si
 - `Shell.tsx`, `lib/` and `globals.css` belong to C1. Another task that needs a change there asks the Lane C person.
 - A change to a contract needs a message to the team and an update to the sample files first.
 
+### Integration notes: using Lane B
+
+**Person 1 (engine)**
+- `engine/challenge.py`: `challenge(chain, confidence, service_accounts)` returns `(hypotheses, result_line)`. Pass that run's chain, its chain confidence (`verdict.confidence`), and the set of service-account names (the keys of `history.json` → `service_accounts`). Call it for the main run and for each stress level. An empty chain gives `([], "No chain to challenge")`.
+- `engine/truth.py`: `score_truth(planted, chain, events)` returns `(truth_score, marked_events)`. Read `planted` once with `load_planted(data_dir)`. Pass the full event list, then trim to the case's `events`, so no mark is lost. Exhibits with `present: false` are not counted as linked.
+- Write every `out/*.json` to a temp file, then `os.replace` it, so the API never reads half a file. Stress files are the nine files `out/stress/00.json`, `05.json` … `40.json`.
+- The API runs `python -m engine.run` from the repo root when someone presses Run, waits up to 120 seconds, and logs your stderr if it fails. It does not pass `JWT_SECRET`, `RESEND_API_KEY` or `SEED_PASSWORD` to the engine.
+
+**Person 3 (frontend core)**
+- A user is `{id, email, name, role, verified}`. Every error is `{"detail": "..."}` with one plain sentence, including `422`.
+- `GET /api/intake`, `/api/case`, `/api/case/stress/{level}` return the files as they are. Before any run, `/api/case` gives `404` "Run the investigation first", which means "show Start".
+- `POST /api/case/run` returns the new case. A second press waits for the first run, it does not fail. Until A5 merges, Run serves the sample files from `tests/fixtures/`. `GET /api/intake` also falls back to the intake sample whenever `out/intake.json` is missing.
+- `403` "Confirm your email first" means show the "check your email" screen. `403` "Your role cannot do this" means show the message and change nothing.
+
+**Person 4 (sign-in, report, admin)**
+- `/verify` sends `POST /api/auth/verify` with `{"token": "..."}`: `200` with the user, or `400` "This link is invalid or has expired". "Send again" is `POST /api/auth/resend-verification`: `204`, or `409` when already confirmed.
+- `POST /api/actions/{id}/approve` gives `201` with `action_id`, `approved_by` and `approved_at`, `409` if already approved, `404` if the action is not in the current case. `GET /api/approvals` lists them oldest first. A new Run clears them.
+- `PATCH /api/users/{id}/role` with `{"role": "viewer" | "analyst" | "admin"}`: `409` when an admin changes their own role, `422` for an unknown role.
+
+**Everyone**
+- After `requirements.txt` changes: `pip install -r requirements.txt` again. Versions are pinned and install on Python 3.11 to 3.14. CI tests 3.11 and 3.14.
+- Before a PR: `./check.sh`. CI blocks only on failing tests and real code errors, never on style.
+- Server logs are in `logs/api.log` and `logs/web.log`.
+
 ## 9. Extra features if there is time
 
 Ranked by how much they raise the chance of winning per hour spent. With the re-planned clock there is no slot for these. Start one only if your lane's tasks are all merged and the 08:00 checkpoint has passed. Realistically only #9 (20 min) fits. Stop at the freeze.
@@ -581,14 +658,15 @@ Ranked by how much they raise the chance of winning per hour spent. With the re-
 |---|---|---|---|
 | 1 | **A clean night.** `python -m generator --no-attack` and a second dataset. Verdict: "No chain found". | Proves the tool does not cry wolf. Answers the first question judges ask. | 30 to 45 min |
 | 2 | **Earliest moment we could have known.** Run the pipeline on events up to each minute and report when confidence first passed 50%. | A headline for the pitch: "flagged at 03:41, 26 minutes before any data left". | 45 min |
-| 3 | **A second attack.** A different chain, such as an insider copying data with no outside sign-in. | Proves the chain is found, not hardcoded. | 1 h |
+| 3 | **A second attack.** A different chain, such as an insider copying data with no outside sign-in. The DoS data already exists in `data_dos/` (section 5); it needs the engine changes listed there. | Proves the chain is found, not hardcoded. | 1 h |
 | 4 | **Which log would help most.** For the weakest step, name the missing source that would raise confidence. | Shows the tool reasons about its own gaps. | 45 min |
-| 5 | **Upload your own log file.** Drop a JSONL file, run the engine on it. Needs `python-multipart`. Guarded by `case:run`. | Strong for the live demo and Q&A. | 1 to 1.5 h |
+| 5 | **Upload your own log file (bring your own logs).** Drop a file, parse it, run the engine on it. Hackathon version: a parser for key=value lines (the shape of our `raw` lines) and JSON lines that maps common field names (`client_ip` → `src`, `username` → `user`) into section 4.1 and keeps the original line in `raw`. Lines it cannot read are counted and shown as a limit, never dropped. Needs `python-multipart`. Guarded by `case:run`. | Strong for the live demo and Q&A. Shows Chimera works on logs we did not write. | 1 to 1.5 h |
 | 6 | **Free-form Ask the case.** An LLM answers from the case JSON only, and every answer must cite log IDs that exist. | Usability. Risky live, so the three ready questions stay as fallback. | 1 to 1.5 h |
 | 7 | **What if we had stopped it at step 2.** Remove a step and show what the attacker could no longer reach. | Reasoning quality. | 1.5 h |
 | 8 | **Analyst feedback.** Mark a step as innocent and the verdict recalculates. | Human in the loop. | 1 h |
 | 9 | **Export the report** as Markdown. | Small polish. | 20 min |
 | 10 | **Google sign-in (OAuth).** A second way in, ending in the same JWT session. | Makes the product feel complete. Needs internet at the venue. | 1 to 1.5 h |
+| 11 | **Log gap detection.** Per source, find stretches with no events (for example, `vpn-gw` silent for 9 minutes while every other source keeps logging). Show each gap on the timeline and add it to "what the logs cannot prove". A gap next to a chain step lowers that step's confidence. | A crash or an attacker wiping logs leaves silence. Sentry sees an outage; Chimera asks whether the silence hides something. | 45 min |
 
 ## 10. What we will not build
 
@@ -630,6 +708,9 @@ Questions to prepare for:
 - **Where does an LLM fit?** Nowhere in detection. Optionally in wording, with citations checked against the logs.
 - **How would it scale?** Stream logs through a queue into the same stages, and keep baselines in a database.
 - **What would you do next?** Real log formats, more attack patterns, learning weights from analyst feedback.
+- **How is this different from Sentry?** Sentry tells developers which line of their code crashed. Chimera tells a security team whether someone broke in, joining innocent-looking events across many systems, with evidence for every claim (section 2).
+- **What if your server crashes?** The engine reads files and writes files, so nothing is lost and it runs again. Server output is kept in `logs/`. In production, logs would land in a queue or S3 first, and Chimera would resume from a bookmark (section 15).
+- **Can it read our real logs?** Today it reads one event format. Next: a parser per raw format (key=value, JSON, syslog, CSV), then connectors for S3, Splunk and Sentinel (section 15).
 
 ## 12. Risks and fallbacks
 
@@ -646,6 +727,9 @@ Questions to prepare for:
 | Two servers to keep running | `run.sh` starts both. For the demo use `npm run build` then `npm start`, which is steadier than dev mode. |
 | Live demo breaks | Backup screen recording made at 08:45. |
 | The AI tools hit usage limits | Use ChatGPT for review and research, Claude for building. Keep tasks small. |
+| The DoS scenario takes engine time from the payroll chain | Build its rate rule and hub exception only after the 06:45 checkpoint passes. The payroll chain comes first. |
+| `data/` checks out with Windows line endings | The content is the same. Compare with `diff --strip-trailing-cr`. Lane B can add a `.gitattributes` rule to keep `data/` and `data_dos/` on Unix line endings. |
+| A server crashes during the demo | Read `logs/api.log` or `logs/web.log`, then start `./run.sh` again. The case files in `out/` are not lost. |
 
 ## 13. Submission checklist
 
@@ -807,6 +891,7 @@ All of these pass as `pytest` tests against the API:
 - With Resend's test sender, mail may only reach the Resend account owner's address. A verified domain removes that limit.
 - Plain HTTP on localhost. A real deployment needs HTTPS and the `Secure` cookie flag.
 - One 1-hour session with no refresh. The user signs in again after it expires.
+- Server logs are kept in `logs/` on the machine running the app. With `RESEND_API_KEY` unset they contain verification links, so the folder must not be shared.
 
 ### 14.12 Email verification
 
@@ -838,3 +923,34 @@ All of these pass as `pytest` tests against the API:
 
 **Send again**
 - `POST /api/auth/resend-verification` makes a new token and sends a new email.
+
+## 15. After the hackathon: reading real customer logs
+
+Not built tonight (section 10 rules out real integrations). This is the roadmap for the pitch and the README.
+
+### Where customer logs live
+
+Companies keep their own copy of every log in a central store, not in the tools that analyse them: Splunk, Microsoft Sentinel, Elastic, Datadog, Better Stack, and cheap long-term storage in Amazon S3. Chimera connects to that store. It never holds the only copy.
+
+Connector order: **S3 first** (almost every company can export there, so one connector reaches the most customers), then **Splunk** and **Sentinel** (the usual tools of security teams), then Elastic and Datadog. Each connector asks the store's search API for a time range with a read-only key from the customer.
+
+### Never losing logs when Chimera is down
+
+- **On the customer's side:** their shipping agent (Fluent Bit, Vector, the Datadog Agent) keeps unsent logs on disk and retries until Chimera is back.
+- **On our side:** incoming logs land in a durable queue (Kafka, Amazon SQS) or in S3 before any analysis. If the analyser crashes, the logs wait in the queue.
+- **Checkpoint and backfill:** keep a bookmark of the last log processed, and after a restart ask for everything after it.
+  - Bookmark by **arrival time** (`received_at`, or Splunk's `_indextime`), never by event time (`ts`). A log that happened at 03:10 but arrived at 03:15 would otherwise be skipped without any error. Our own data has 212 such late logs.
+  - Ask again for a few minutes before the bookmark, and remove duplicates by log ID.
+  - Save the bookmark only after the logs are processed, and keep it in the database, not in memory.
+
+### Raw text into Chimera's format
+
+- One parser per **format**, not per product: key=value, JSON, syslog, CSV, Windows event XML. Each maps its fields into the section 4.1 event and keeps the original line in `raw`, so the evidence drawer always shows the exact text.
+- A mapping table per source handles the same meaning under different names (`src`, `client_ip`, `source_address`).
+- Timestamps without a year or a timezone are the main risk. A wrong guess quietly puts the attack in the wrong order, so the source's timezone is set per connector, never guessed.
+- A line that cannot be parsed is kept, marked unparsed, and counted in the summary. It is never dropped, because an attacker's odd line is the one most likely to look strange.
+- Where sources already use **OCSF** (an open standard shape for security logs), one converter covers many of them.
+
+### What changes in the engine
+
+Nothing in the six stages. Connectors and parsers turn every source into the section 4.1 event, and the engine keeps reading one format. Live volume would stream through the queue into the same stages, with baselines kept in a database instead of `history.json`.
