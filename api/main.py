@@ -1,13 +1,15 @@
 import logging
+import os
 import sqlite3
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, HTTPException, Request, Response
+from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from api import case_files
+from api import email as mailer
 from api.auth import (
     MAX_PASSWORD_BYTES,
     check_dummy_password,
@@ -16,7 +18,9 @@ from api.auth import (
     current_user,
     hash_password,
     jwt_secret,
+    new_verification_token,
     set_session_cookie,
+    use_verification_token,
     user_out,
 )
 from api.db import get_db, init_db, now_iso
@@ -88,22 +92,59 @@ class LoginBody(BaseModel):
     _clean_email = field_validator("email", mode="before")(clean_email)
 
 
+class VerifyBody(BaseModel):
+    token: str = Field(max_length=200)
+
+
+def app_url():
+    return (os.environ.get("APP_URL") or "http://localhost:3000").rstrip("/")
+
+
+def send_verification(background_tasks, db, user):
+    token = new_verification_token(db, user["id"])
+    db.commit()
+    link = f"{app_url()}/verify?token={token}"
+    background_tasks.add_task(mailer.send_verification_email, user["email"], user["name"], link)
+
+
 @app.post("/api/auth/signup", status_code=201)
-def signup(body: SignupBody, response: Response, db=Depends(get_db)):
+def signup(
+    body: SignupBody,
+    response: Response,
+    background_tasks: BackgroundTasks,
+    db=Depends(get_db),
+):
     try:
         cursor = db.execute(
             "INSERT INTO users (email, name, password_hash, role, created_at)"
             " VALUES (?, ?, ?, ?, ?)",
             (body.email, body.name, hash_password(body.password), DEFAULT_ROLE, now_iso()),
         )
-        db.commit()
     except sqlite3.IntegrityError:
         raise HTTPException(
             status_code=409, detail="An account with this email already exists"
         ) from None
     row = db.execute("SELECT * FROM users WHERE id = ?", (cursor.lastrowid,)).fetchone()
+    send_verification(background_tasks, db, row)
     set_session_cookie(response, row["id"])
     return user_out(row)
+
+
+@app.post("/api/auth/verify")
+def verify(body: VerifyBody, db=Depends(get_db)):
+    row = use_verification_token(db, body.token)
+    if row is None:
+        raise HTTPException(status_code=400, detail="This link is invalid or has expired")
+    return user_out(row)
+
+
+@app.post("/api/auth/resend-verification", status_code=204)
+def resend_verification(
+    background_tasks: BackgroundTasks, user=Depends(current_user), db=Depends(get_db)
+):
+    if user["email_verified_at"] is not None:
+        raise HTTPException(status_code=409, detail="Your email is already confirmed")
+    send_verification(background_tasks, db, user)
 
 
 @app.post("/api/auth/login")
