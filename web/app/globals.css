@@ -1360,6 +1360,31 @@ tr:hover td {
   fill: var(--on-accent);
 }
 
+.t-pin.inferred path {
+  stroke: var(--amber-border);
+  stroke-dasharray: 3 2;
+}
+
+.t-pin.inferred rect {
+  stroke: var(--amber);
+}
+
+.t-pin.inferred text {
+  fill: var(--amber);
+}
+
+.t-pin.inferred.sel rect {
+  fill: var(--amber);
+}
+
+.t-pin.inferred.sel text {
+  fill: var(--on-accent);
+}
+
+.legend-line.inferred {
+  background: repeating-linear-gradient(90deg, var(--amber) 0 4px, transparent 4px 7px);
+}
+
 @keyframes g-draw {
   to {
     stroke-dashoffset: 0;

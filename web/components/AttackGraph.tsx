@@ -64,7 +64,7 @@ function badgeSpot(from: GraphNode, to: GraphNode, nodes: GraphNode[]) {
 }
 
 const LOOP_DIRECTIONS = [-45, -135, 45, 135, -90, 0, 180];
-const LOOP_REACH = 44;
+const LOOP_REACH = 56;
 
 function loopGeometry(node: GraphNode, nodes: GraphNode[]) {
   const r = RADIUS[node.state];
@@ -84,7 +84,7 @@ function loopGeometry(node: GraphNode, nodes: GraphNode[]) {
   const c2 = point(dir + 34, r + LOOP_REACH);
   const p2 = point(dir + 28, r + 3);
   const angle = (Math.atan2(p2.y - c2.y, p2.x - c2.x) * 180) / Math.PI;
-  const badge = point(dir, r + LOOP_REACH * 0.78);
+  const badge = point(dir, r + LOOP_REACH * 0.75 + 14);
   return {
     d: `M ${p1.x} ${p1.y} C ${c1.x} ${c1.y} ${c2.x} ${c2.y} ${p2.x} ${p2.y}`,
     x2: p2.x,
@@ -343,6 +343,12 @@ export function AttackGraph() {
           <span className="legend-line" />
           Attack step
         </span>
+        {chain.some((s) => s.inferred) && (
+          <span>
+            <span className="legend-line inferred" />
+            Inferred step, its log is missing
+          </span>
+        )}
       </div>
 
       <div
@@ -402,7 +408,7 @@ export function AttackGraph() {
               return (
                 <g
                   key={`pin-${replayId}-${st.step}`}
-                  className={`t-pin${isSelected ? " sel" : ""}`}
+                  className={`t-pin${st.inferred ? " inferred" : ""}${isSelected ? " sel" : ""}`}
                   onClick={() => handleStepSelect(i)}
                 >
                   <title>{`Step ${st.step} at ${st.time} UTC`}</title>
