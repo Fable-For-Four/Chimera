@@ -17,7 +17,7 @@ const NAV_ITEMS = [
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, caseData, isRunning, runInvestigation, resetCase } = useApp();
+  const { user, caseData, isRunning, runInvestigation, resetCase, error } = useApp();
 
   const handleRerun = () => {
     runInvestigation();
@@ -237,7 +237,24 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </header>
 
         {/* Content View */}
-        <main className="page-wrapper">{children}</main>
+        <main className="page-wrapper">
+          {error && (
+            <p
+              role="alert"
+              style={{
+                margin: "0 0 16px",
+                padding: "10px 14px",
+                border: "1px solid var(--red-border)",
+                background: "var(--red-soft)",
+                color: "var(--red)",
+                borderRadius: "6px",
+              }}
+            >
+              {error}
+            </p>
+          )}
+          {children}
+        </main>
       </div>
     </div>
   );
