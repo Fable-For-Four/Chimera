@@ -303,31 +303,39 @@ export function StressLab() {
               <span className="pill pill-lime">Only possible on simulated data</span>
             </div>
 
-            <div className="grid-2" style={{ gap: "12px" }}>
-              <div className="metric-box">
-                <div className="metric-val" style={{ color: "var(--lime)" }}>
-                  {truth_score.recall}%
-                </div>
-                <div className="metric-label">
-                  Recall ({truth_score.found} of {truth_score.planted} planted events found)
-                </div>
-              </div>
+            {truth_score.planted === 0 ? (
+              <p style={{ fontSize: "13px", color: "var(--text-muted)", lineHeight: "1.6" }}>
+                These logs have no answer key, so the chain cannot be scored against a planted attack.
+              </p>
+            ) : (
+              <>
+                <div className="grid-2" style={{ gap: "12px" }}>
+                  <div className="metric-box">
+                    <div className="metric-val" style={{ color: "var(--lime)" }}>
+                      {truth_score.recall}%
+                    </div>
+                    <div className="metric-label">
+                      Recall ({truth_score.found} of {truth_score.planted} planted events found)
+                    </div>
+                  </div>
 
-              <div className="metric-box">
-                <div className="metric-val" style={{ color: "var(--lime)" }}>
-                  {truth_score.precision}%
+                  <div className="metric-box">
+                    <div className="metric-val" style={{ color: "var(--lime)" }}>
+                      {truth_score.precision}%
+                    </div>
+                    <div className="metric-label">
+                      Precision ({truth_score.false_links.length} false links)
+                    </div>
+                  </div>
                 </div>
-                <div className="metric-label">
-                  Precision ({truth_score.false_links.length} false links)
-                </div>
-              </div>
-            </div>
 
-            <div style={{ fontSize: "11px", color: "var(--text-dim)", lineHeight: "1.5" }}>
-              {truth_score.missed.length > 0
-                ? `Missed: ${truth_score.missed.join(", ")}.`
-                : "No planted event was missed."}
-            </div>
+                <div style={{ fontSize: "11px", color: "var(--text-dim)", lineHeight: "1.5" }}>
+                  {truth_score.missed.length > 0
+                    ? `Missed: ${truth_score.missed.join(", ")}.`
+                    : "No planted event was missed."}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

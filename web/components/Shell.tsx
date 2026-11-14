@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useApp } from "../lib/state";
 import { logoutUser } from "../lib/api";
+import { timeWindow } from "../lib/time";
 
 const NAV_ITEMS = [
   { href: "/", label: "Overview", icon: "grid" },
@@ -17,8 +18,9 @@ const NAV_ITEMS = [
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, intake, caseData, isRunning, runInvestigation, resetCase, error } = useApp();
+  const { user, intake, caseData, source, isRunning, runInvestigation, resetCase, error } = useApp();
   const eventCount = intake?.summary.events.toLocaleString() ?? "";
+  const upload = source?.kind === "upload" ? source : null;
 
   const handleRerun = () => {
     runInvestigation();
@@ -69,7 +71,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             />
             {isCaseReady ? "Breach under investigation" : isNoChain ? "Closed, no chain found" : "Waiting for a run"}
           </div>
-          <div className="case-window">14 Nov 2026, 03:00–04:30 UTC</div>
+          {intake && <div className="case-window">{timeWindow(intake.volume)}</div>}
         </div>
 
         <div className="nav-heading sidebar-card">Investigation</div>
@@ -102,13 +104,19 @@ export function Shell({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="sidebar-card sidebar-foot">
-          <span className="status-dot" style={{ background: "var(--amber)" }} />
+          <span className="status-dot" style={{ background: upload ? "var(--accent)" : "var(--amber)" }} />
           <span>
-            Simulated data
-            {intake && (
+            {upload ? "Uploaded logs" : "Simulated data"}
+            {upload ? (
               <span className="sidebar-foot-sub">
-                {eventCount} events from {intake.summary.sources} sources
+                {upload.name}, {upload.events.toLocaleString()} lines read
               </span>
+            ) : (
+              intake && (
+                <span className="sidebar-foot-sub">
+                  {eventCount} events from {intake.summary.sources} sources
+                </span>
+              )
             )}
           </span>
         </div>
@@ -174,6 +182,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
           {error && (
             <p role="alert" className="shell-error">
               {error}
+            </p>
+          )}
+          {upload && upload.unparsed > 0 && (
+            <p role="status" className="shell-note">
+              {upload.unparsed.toLocaleString()} {upload.unparsed === 1 ? "line" : "lines"} in {upload.name}{" "}
+              could not be read and {upload.unparsed === 1 ? "is" : "are"} not in this case.
             </p>
           )}
           {children}

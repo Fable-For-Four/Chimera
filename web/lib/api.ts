@@ -1,4 +1,4 @@
-import { CaseData, IntakeData, User, Approval, Night } from "./types";
+import { CaseData, IntakeData, User, Approval, Night, CaseVersion, UploadResult } from "./types";
 
 const IS_BROWSER = typeof window !== "undefined";
 
@@ -80,6 +80,22 @@ export async function getStressCase(level: number): Promise<CaseData> {
 
 export async function postRunInvestigation(night: Night): Promise<CaseData> {
   return request<CaseData>("/api/case/run", { method: "POST", body: JSON.stringify({ night }) });
+}
+
+export async function postUploadLogs(file: File): Promise<UploadResult> {
+  return request<UploadResult>(`/api/case/upload?name=${encodeURIComponent(file.name)}`, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: file,
+  });
+}
+
+export async function getCaseVersion(): Promise<CaseVersion | null> {
+  try {
+    return await request<CaseVersion>("/api/case/version");
+  } catch {
+    return null;
+  }
 }
 
 export async function postApproveAction(actionId: string): Promise<Approval> {

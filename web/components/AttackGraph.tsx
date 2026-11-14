@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useApp } from "../lib/state";
 import { GraphNode } from "../lib/types";
+import { timeWindow } from "../lib/time";
 
 export function AttackGraph() {
   const { caseData, selectedStep, setSelectedStep } = useApp();
@@ -357,7 +358,7 @@ export function AttackGraph() {
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
           <span className="kicker">Event volume, with the attack steps pinned</span>
           <span className="mono" style={{ fontSize: "11px", color: "var(--text-dim)" }}>
-            03:00 to 04:30 UTC
+            {timeWindow(volume)}
           </span>
         </div>
 

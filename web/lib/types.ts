@@ -201,3 +201,19 @@ export interface Approval {
   approved_by: string;
   approved_at: string;
 }
+
+export interface UploadResult {
+  events: number;
+  unparsed: number;
+  formats: Record<string, number>;
+}
+
+export type CaseSource =
+  | { kind: "simulated"; name: Night }
+  | ({ kind: "upload"; name: string } & UploadResult);
+
+export interface CaseVersion {
+  case: string | null;
+  approvals: number;
+  source: CaseSource | null;
+}

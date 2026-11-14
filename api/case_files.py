@@ -1,16 +1,24 @@
 import importlib.util
 import json
+import math
 import os
 import random
+import shutil
 import subprocess
 import sys
 import tempfile
 import threading
+from datetime import date, datetime, timedelta
 from pathlib import Path
+
+from api import parse_logs
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "out"
-NIGHT_DATA = {"attack": ROOT / "data", "quiet": ROOT / "data_dos"}
+BASELINE_DIR = ROOT / "data"
+BASELINE_FILES = ("history.json", "access.json", "layout.json")
+MAX_UPLOAD_SPAN = timedelta(hours=24)
+NIGHT_DATA = {"attack": BASELINE_DIR, "quiet": ROOT / "data_dos"}
 GENERATED_SCENARIOS = {
     "stopped": "stopped",
     "gap": "gap",
@@ -30,6 +38,18 @@ lock = threading.RLock()
 
 class UnreadableCaseFile(Exception):
     pass
+
+
+class NoReadableLines(Exception):
+    def __init__(self, unparsed):
+        super().__init__(f"{unparsed} lines could not be read")
+        self.unparsed = unparsed
+
+
+class SpanTooLong(Exception):
+    def __init__(self, hours):
+        super().__init__(f"the lines span {hours} hours")
+        self.hours = hours
 
 
 def load(path):
@@ -116,10 +136,61 @@ def write_samples():
     write_json(OUT_DIR / "case.json", sample_case)
 
 
+def case_version():
+    try:
+        return str((OUT_DIR / "case.json").stat().st_mtime_ns)
+    except FileNotFoundError:
+        return None
+
+
+def baseline_day():
+    with open(BASELINE_DIR / "events.jsonl", encoding="utf-8") as f:
+        return date.fromisoformat(json.loads(f.readline())["ts"][:10])
+
+
+def install_outputs(src):
+    # The case goes in last, so a reader never sees a new case with an old intake.
+    files = sorted((src / "stress").glob("*.json")) + [src / "intake.json", src / "case.json"]
+    for path in files:
+        target = OUT_DIR / path.relative_to(src)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        temp = target.with_suffix(".tmp")
+        shutil.copyfile(path, temp)
+        os.replace(temp, target)
+
+
+def source():
+    return read(OUT_DIR / "source.json")
+
+
+def run_upload(text, name, on_success):
+    events, unparsed, formats = parse_logs.parse_text(text, baseline_day())
+    if not events:
+        raise NoReadableLines(len(unparsed))
+    times = [datetime.fromisoformat(event["ts"]) for event in events]
+    span = max(times) - min(times)
+    if span > MAX_UPLOAD_SPAN:
+        raise SpanTooLong(math.ceil(span.total_seconds() / 3600))
+    with lock, tempfile.TemporaryDirectory() as tmp:
+        data_dir, out_dir = Path(tmp) / "data", Path(tmp) / "out"
+        data_dir.mkdir()
+        parse_logs.write_jsonl(data_dir / "events.jsonl", events)
+        for baseline in BASELINE_FILES:
+            shutil.copyfile(BASELINE_DIR / baseline, data_dir / baseline)
+        write_json(data_dir / "truth.json", {"planted": []})
+        run_module(["engine.run", str(data_dir), str(out_dir)])
+        result = {"events": len(events), "unparsed": len(unparsed), "formats": formats}
+        write_json(OUT_DIR / "source.json", {"kind": "upload", "name": name, **result})
+        install_outputs(out_dir)
+        on_success()
+    return result
+
+
 def run_investigation(on_success, night="attack"):
     with lock:
         run_engine(night)
         data = load(OUT_DIR / "case.json")
         if data is not None:
+            write_json(OUT_DIR / "source.json", {"kind": "simulated", "name": night})
             on_success()
         return data
