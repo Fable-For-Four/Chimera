@@ -11,6 +11,7 @@ const ARROW = 9;
 const BUCKET_MINUTES = 5;
 const TIMELINE_X = 30;
 const TIMELINE_WIDTH = 700;
+const PIN_GAP = 18;
 
 function NodeIcon({ type }: { type: GraphNode["type"] }) {
   if (type === "user") {
@@ -60,6 +61,37 @@ function badgeSpot(from: GraphNode, to: GraphNode, nodes: GraphNode[]) {
     if (room > best.room + 4) best = { x, y, room };
   }
   return best;
+}
+
+const LOOP_DIRECTIONS = [-45, -135, 45, 135, -90, 0, 180];
+const LOOP_REACH = 44;
+
+function loopGeometry(node: GraphNode, nodes: GraphNode[]) {
+  const r = RADIUS[node.state];
+  const point = (deg: number, dist: number) => {
+    const rad = (deg * Math.PI) / 180;
+    return { x: node.x + Math.cos(rad) * dist, y: node.y + Math.sin(rad) * dist };
+  };
+  const room = (deg: number) => {
+    const tip = point(deg, r + LOOP_REACH);
+    return Math.min(
+      ...nodes.filter((n) => n.id !== node.id).map((n) => Math.hypot(tip.x - n.x, tip.y - n.y)),
+    );
+  };
+  const dir = LOOP_DIRECTIONS.reduce((best, deg) => (room(deg) > room(best) + 4 ? deg : best));
+  const p1 = point(dir - 28, r + 3);
+  const c1 = point(dir - 34, r + LOOP_REACH);
+  const c2 = point(dir + 34, r + LOOP_REACH);
+  const p2 = point(dir + 28, r + 3);
+  const angle = (Math.atan2(p2.y - c2.y, p2.x - c2.x) * 180) / Math.PI;
+  const badge = point(dir, r + LOOP_REACH * 0.78);
+  return {
+    d: `M ${p1.x} ${p1.y} C ${c1.x} ${c1.y} ${c2.x} ${c2.y} ${p2.x} ${p2.y}`,
+    x2: p2.x,
+    y2: p2.y,
+    angle,
+    badge,
+  };
 }
 
 function edgeGeometry(from: GraphNode, to: GraphNode) {
@@ -223,8 +255,12 @@ export function AttackGraph() {
             const toNode = nodeMap.get(st.to);
             if (!fromNode || !toNode) return null;
 
+            const isLoop = fromNode.id === toNode.id;
             const g = edgeGeometry(fromNode, toNode);
-            const badge = badgeSpot(fromNode, toNode, nodes);
+            const loop = isLoop ? loopGeometry(fromNode, nodes) : null;
+            const badge = loop ? loop.badge : badgeSpot(fromNode, toNode, nodes);
+            const tip = loop ?? g;
+            const edgePath = loop ? loop.d : `M ${g.x1} ${g.y1} L ${g.lineEndX} ${g.lineEndY}`;
             const isSelected = selectedStep === idx;
             const kind = st.inferred ? "inferred" : "seen";
 
@@ -235,27 +271,16 @@ export function AttackGraph() {
                 onClick={() => handleStepSelect(idx)}
               >
                 <title>{`Step ${st.step}: ${st.what}`}</title>
-                <line x1={g.x1} y1={g.y1} x2={g.x2} y2={g.y2} className="g-hit" />
-                <line
-                  x1={g.x1}
-                  y1={g.y1}
-                  x2={g.lineEndX}
-                  y2={g.lineEndY}
-                  pathLength={1}
-                  className="g-edge"
-                />
+                <path d={edgePath} className="g-hit" />
+                <path d={edgePath} pathLength={1} className="g-edge" />
                 <path
                   d={`M 0 0 L ${-ARROW} ${-ARROW / 2} L ${-ARROW} ${ARROW / 2} Z`}
-                  transform={`translate(${g.x2} ${g.y2}) rotate(${g.angle})`}
+                  transform={`translate(${tip.x2} ${tip.y2}) rotate(${tip.angle})`}
                   className="g-arrow"
                 />
                 {isSelected && !st.inferred && (
                   <circle r="3" className="g-dot">
-                    <animateMotion
-                      dur="1.4s"
-                      repeatCount="indefinite"
-                      path={`M ${g.x1} ${g.y1} L ${g.lineEndX} ${g.lineEndY}`}
-                    />
+                    <animateMotion dur="1.4s" repeatCount="indefinite" path={edgePath} />
                   </circle>
                 )}
                 <g transform={`translate(${badge.x} ${badge.y})`} className="g-badge">
@@ -368,7 +393,10 @@ export function AttackGraph() {
 
             {chain.map((st, i) => {
               if (i >= visible) return null;
-              const x = TIMELINE_X + (st.minute / axisMinutes) * TIMELINE_WIDTH;
+              const pinX = (s: ChainStep) => TIMELINE_X + (s.minute / axisMinutes) * TIMELINE_WIDTH;
+              const x = pinX(st);
+              const crowd = chain.slice(0, i).filter((s) => Math.abs(pinX(s) - x) < PIN_GAP).length;
+              const bx = x + crowd * PIN_GAP;
               const isSelected = selectedStep === i;
 
               return (
@@ -378,9 +406,9 @@ export function AttackGraph() {
                   onClick={() => handleStepSelect(i)}
                 >
                   <title>{`Step ${st.step} at ${st.time} UTC`}</title>
-                  <line x1={x} y1="14" x2={x} y2="60" />
-                  <rect x={x - 8} y="6" width="16" height="16" />
-                  <text x={x} y="17.5" textAnchor="middle">
+                  <path d={`M ${x} 60 L ${x} 26 L ${bx} 22`} />
+                  <rect x={bx - 8} y="6" width="16" height="16" />
+                  <text x={bx} y="17.5" textAnchor="middle">
                     {st.step}
                   </text>
                 </g>
