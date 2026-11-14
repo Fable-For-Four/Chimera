@@ -8,9 +8,9 @@ import { logoutUser } from "../lib/api";
 
 const NAV_ITEMS = [
   { href: "/", label: "Overview", icon: "grid" },
-  { href: "/graph", label: "Attack Graph", icon: "graph" },
-  { href: "/logs", label: "Evidence Log", icon: "list" },
-  { href: "/stress", label: "Stress Test", icon: "activity" },
+  { href: "/graph", label: "Attack graph", icon: "graph" },
+  { href: "/logs", label: "Evidence log", icon: "list" },
+  { href: "/stress", label: "Stress test", icon: "activity" },
   { href: "/report", label: "Report", icon: "file-text" },
 ];
 
@@ -40,57 +40,40 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="app-container">
-      {/* Sidebar */}
       <aside className="sidebar">
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "24px" }}>
-          <div
-            style={{
-              width: "32px",
-              height: "32px",
-              borderRadius: "6px",
-              background: "var(--lime)",
-              color: "var(--on-accent)",
-              display: "grid",
-              placeItems: "center",
-              fontWeight: 800,
-              fontFamily: "var(--font-mono)",
-              fontSize: "18px",
-            }}
-          >
-            C
-          </div>
+        <div className="brand">
+          <span className="brand-mark" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <line x1="2" y1="4" x2="9" y2="4" />
+              <line x1="5" y1="8" x2="12" y2="8" />
+              <line x1="8" y1="12" x2="14" y2="12" />
+            </svg>
+          </span>
           <div className="brand-text">
-            <div style={{ fontWeight: 700, letterSpacing: "1px", fontSize: "14px" }}>CHIMERA</div>
-            <div className="kicker" style={{ fontSize: "9px" }}>Threat Intelligence</div>
+            <div className="brand-name">Chimera</div>
+            <div className="brand-sub">Log investigation</div>
           </div>
         </div>
 
-        {/* Case Card */}
-        <div
-          className="sidebar-card"
-          style={{
-            background: "var(--panel)",
-            border: "1px solid var(--border)",
-            borderRadius: "6px",
-            padding: "10px 12px",
-            marginBottom: "20px",
-          }}
-        >
-          <div className="kicker" style={{ marginBottom: "2px" }}>Case 0114 · Acme Corp</div>
-          <div style={{ fontSize: "12px", color: "var(--text)", fontWeight: 500 }}>
-            {isCaseReady
-              ? "Active Breach Investigation"
-              : isNoChain
-              ? "Investigation Complete · No Chain"
-              : "Pre-Investigation Intake"}
+        <div className="sidebar-card case-card">
+          <div className="case-title">
+            <span>Case 0114</span>
+            <span className="case-org">Acme Corp</span>
           </div>
-          <div style={{ fontSize: "10px", color: "var(--text-dim)", marginTop: "4px" }}>
-            14 Nov 2026 · 03:00–04:30 UTC
+          <div className="case-state">
+            <span
+              className="status-dot"
+              style={{
+                background: isCaseReady ? "var(--red)" : isNoChain ? "var(--accent)" : "var(--text-dim)",
+              }}
+            />
+            {isCaseReady ? "Breach under investigation" : isNoChain ? "Closed, no chain found" : "Waiting for a run"}
           </div>
+          <div className="case-window">14 Nov 2026, 03:00–04:30 UTC</div>
         </div>
 
-        {/* Navigation */}
-        <nav style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+        <div className="nav-heading sidebar-card">Investigation</div>
+        <nav className="nav">
           {NAV_ITEMS.map((item) => {
             const active = pathname === item.href;
             const disabled = !isCaseReady && item.href !== "/" && item.href !== "/logs";
@@ -99,167 +82,96 @@ export function Shell({ children }: { children: React.ReactNode }) {
               <Link
                 key={item.href}
                 href={disabled ? "#" : item.href}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "9px 12px",
-                  borderRadius: "6px",
-                  fontSize: "12px",
-                  fontWeight: 500,
-                  color: active ? "var(--lime)" : disabled ? "var(--text-dim)" : "var(--text-muted)",
-                  background: active ? "var(--panel-raised)" : "transparent",
-                  border: active ? "1px solid var(--border-light)" : "1px solid transparent",
-                  pointerEvents: disabled ? "none" : "auto",
-                  opacity: disabled ? 0.45 : 1,
-                  transition: "all 0.15s",
-                }}
+                className={`nav-link${active ? " active" : ""}${disabled ? " disabled" : ""}`}
+                aria-current={active ? "page" : undefined}
+                aria-disabled={disabled || undefined}
+                tabIndex={disabled ? -1 : undefined}
               >
-                <span style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <span className="nav-link-main">
                   <NavIcon name={item.icon} />
                   <span className="nav-label">{item.label}</span>
                 </span>
-                {item.href === "/logs" && (
-                  <span className="mono" style={{ fontSize: "10px", color: "var(--text-dim)" }}>
-                    {eventCount}
-                  </span>
-                )}
+                {item.href === "/logs" && <span className="nav-count">{eventCount}</span>}
                 {item.href === "/graph" && isCaseReady && (
-                  <span className="mono" style={{ fontSize: "10px", color: "var(--lime)" }}>
-                    {caseData?.chain.length} steps
-                  </span>
+                  <span className="nav-count nav-count-accent">{caseData?.chain.length}</span>
                 )}
               </Link>
             );
           })}
         </nav>
 
-        {/* Bottom Card */}
-        <div style={{ marginTop: "auto" }} className="sidebar-card">
-          <div
-            style={{
-              padding: "12px",
-              borderRadius: "6px",
-              border: "1px solid var(--border)",
-              background: "var(--panel)",
-              fontSize: "11px",
-              color: "var(--text-muted)",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "4px" }}>
-              <span
-                style={{
-                  width: "6px",
-                  height: "6px",
-                  borderRadius: "50%",
-                  background: "var(--amber)",
-                }}
-              />
-              <span style={{ fontWeight: 600, color: "var(--text)" }}>Simulated Data</span>
-            </div>
-            {intake
-              ? `${eventCount} events from ${intake.summary.sources} log sources. Plain deterministic engine rules.`
-              : "Plain deterministic engine rules."}
-          </div>
+        <div className="sidebar-card sidebar-foot">
+          <span className="status-dot" style={{ background: "var(--amber)" }} />
+          <span>
+            Simulated data
+            {intake && (
+              <span className="sidebar-foot-sub">
+                {eventCount} events from {intake.summary.sources} sources
+              </span>
+            )}
+          </span>
         </div>
       </aside>
 
-      {/* Main Container */}
       <div className="main-content">
-        {/* Top bar */}
         <header className="topbar">
-          <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
-            <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-              Cases <span style={{ color: "var(--text-dim)" }}>/</span> 0114{" "}
-              <span style={{ color: "var(--text-dim)" }}>/</span>{" "}
-              <strong style={{ color: "var(--text)" }}>
-                {NAV_ITEMS.find((n) => n.href === pathname)?.label || "Investigation"}
-              </strong>
-            </span>
+          <div className="topbar-left">
+            <nav className="crumbs" aria-label="Breadcrumb">
+              <span>Cases</span>
+              <span className="crumb-sep">/</span>
+              <span className="mono">0114</span>
+              <span className="crumb-sep">/</span>
+              <strong>{NAV_ITEMS.find((n) => n.href === pathname)?.label || "Investigation"}</strong>
+            </nav>
 
             {isCaseReady ? (
               <span className={`pill ${confidence >= 70 ? "pill-red" : "pill-amber"}`}>
-                {confidence >= 70 ? "High Severity Attack" : "Suspicious Activity"}
+                {confidence >= 70 ? "High severity" : "Suspicious activity"}
               </span>
             ) : isNoChain ? (
-              <span className="pill pill-lime">No Attack Chain Found</span>
+              <span className="pill pill-lime">No attack chain</span>
             ) : (
-              <span className="pill pill-lime">Intake Ingested · Clean Alert Rules</span>
+              <span className="pill">Not run yet</span>
             )}
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <div className="topbar-right">
             {(isCaseReady || isNoChain) && (
               <>
-                <button
-                  className="btn btn-small"
-                  onClick={handleReset}
-                  title="Reset to intake preview screen"
-                >
-                  Start Over
+                <button className="btn btn-small btn-ghost" onClick={handleReset} title="Go back to the intake screen">
+                  Start over
                 </button>
                 <button
                   className="btn btn-small"
                   onClick={handleRerun}
                   disabled={isRunning || user?.role === "viewer"}
-                  title={user?.role === "viewer" ? "Viewers cannot trigger runs" : "Re-run engine pipeline"}
+                  title={user?.role === "viewer" ? "Viewers cannot start a run" : "Run the engine again"}
                 >
-                  {isRunning ? "Running..." : "Re-run Investigation"}
+                  {isRunning ? "Running..." : "Re-run investigation"}
                 </button>
               </>
             )}
 
             {user && (
-              <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                <div
-                  style={{
-                    width: "28px",
-                    height: "28px",
-                    borderRadius: "50%",
-                    background: "var(--panel-raised)",
-                    border: "1px solid var(--border-light)",
-                    display: "grid",
-                    placeItems: "center",
-                    fontSize: "11px",
-                    fontFamily: "var(--font-mono)",
-                    color: "var(--lime)",
-                  }}
-                >
+              <div className="user-chip">
+                <span className="user-avatar" aria-hidden="true">
                   {user.name.slice(0, 2).toUpperCase()}
-                </div>
-                <div style={{ display: "flex", flexDirection: "column" }}>
-                  <span style={{ fontSize: "12px", fontWeight: 600, color: "var(--text)" }}>{user.name}</span>
-                  <span className="kicker" style={{ fontSize: "9px", color: "var(--text-dim)" }}>
-                    {user.role.toUpperCase()}
-                  </span>
-                </div>
-                <button
-                  onClick={logoutUser}
-                  className="btn btn-small"
-                  style={{ marginLeft: "8px", color: "var(--text-dim)" }}
-                  title="Sign out"
-                >
-                  Logout
+                </span>
+                <span className="user-meta">
+                  <span className="user-name">{user.name}</span>
+                  <span className="user-role">{user.role}</span>
+                </span>
+                <button onClick={logoutUser} className="btn btn-small btn-ghost" title="Sign out">
+                  Sign out
                 </button>
               </div>
             )}
           </div>
         </header>
 
-        {/* Content View */}
         <main className="page-wrapper">
           {error && (
-            <p
-              role="alert"
-              style={{
-                margin: "0 0 16px",
-                padding: "10px 14px",
-                border: "1px solid var(--red-border)",
-                background: "var(--red-soft)",
-                color: "var(--red)",
-                borderRadius: "6px",
-              }}
-            >
+            <p role="alert" className="shell-error">
               {error}
             </p>
           )}
