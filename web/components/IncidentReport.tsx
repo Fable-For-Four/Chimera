@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+
 import { useApp } from "../lib/state";
 
 export function IncidentReport() {
   const router = useRouter();
   const { caseData, setSelectedStep, approvals } = useApp();
-  const [copied, setCopied] = useState<boolean>(false);
+  const [copied, setCopied] = useState(false);
 
   if (!caseData || !caseData.report) {
     return (
@@ -17,78 +18,80 @@ export function IncidentReport() {
     );
   }
 
-  const { verdict, report, chain, limits, actions } = caseData;
+  const { verdict, report, chain, limits, actions, summary, level, deleted } = caseData;
 
-  const handleCitationClick = (stepNum: number) => {
-    setSelectedStep(stepNum - 1);
+  function openCitation(step: number) {
+    setSelectedStep(step - 1);
     router.push("/graph");
-  };
+  }
 
-  const handleCopyText = async () => {
+  async function copyReport() {
     const lines = [
-      `CHIMERA INCIDENT INVESTIGATION REPORT`,
-      `Case: 0114 · Acme Corp`,
+      "CHIMERA INCIDENT INVESTIGATION REPORT",
       `Confidence: ${verdict.confidence}%`,
       `Status: ${verdict.label}`,
-      `Date: 14 Nov 2026`,
-      ``,
-      `--- WHAT HAPPENED ---`,
-      ...report.map((r) => `- ${r.text} [Cites: ${r.cites.join(", ")}]`),
-      ``,
-      `--- ATTACK SEQUENCE ---`,
+      `Dataset: Simulated (${summary.events.toLocaleString()} events)`,
+      `Stress level: ${level}% (${deleted.toLocaleString()} events deleted)`,
+      "",
+      "--- WHAT HAPPENED ---",
+      ...report.map((item) => `- ${item.text} [Cites: ${item.cites.join(", ")}]`),
+      "",
+      "--- ATTACK SEQUENCE ---",
       ...chain.map(
-        (c) =>
-          `[${c.time} UTC] Step ${c.step}: ${c.stage} (${c.technique}) - ${c.what} (${c.confidence}% sure)`
+        (step) =>
+          `[${step.time} UTC] Step ${step.step}: ${step.stage} (${step.technique}) - ${step.what} (${step.confidence}% sure)`,
       ),
-      ``,
-      `--- WHAT THE LOGS CANNOT PROVE ---`,
-      ...limits.map((l) => `- ${l}`),
-      ``,
-      `--- ACTIONS & APPROVALS ---`,
-      ...actions.map((a) => `- [${approvals[a.id] ? "APPROVED" : "PENDING"}] ${a.kind}: ${a.text}`),
+      "",
+      "--- WHAT THE LOGS CANNOT PROVE ---",
+      ...limits.map((limit) => `- ${limit}`),
+      "",
+      "--- ACTIONS & APPROVALS ---",
+      ...actions.map((action) => {
+        const approval = approvals[action.id];
+        const state = approval
+          ? `APPROVED by ${approval.approved_by} at ${new Date(approval.approved_at).toLocaleString()}`
+          : "PENDING";
+        return `- [${state}] ${action.kind}: ${action.text}`;
+      }),
     ];
 
     try {
       await navigator.clipboard.writeText(lines.join("\n"));
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      window.setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback
+      setCopied(false);
     }
-  };
+  }
 
   return (
     <div style={{ maxWidth: "860px", margin: "0 auto", width: "100%" }}>
       <div className="card" style={{ padding: "32px", gap: "24px", background: "var(--panel)" }}>
-        {/* Report Header */}
-        <div style={{ borderBottom: "1px solid var(--border)", paddingBottom: "20px" }}>
-          <div className="kicker" style={{ color: "var(--lime)" }}>
-            Formal Incident Summary · Case 0114
-          </div>
+        <header style={{ borderBottom: "1px solid var(--border)", paddingBottom: "20px" }}>
+          <div className="kicker" style={{ color: "var(--lime)" }}>Formal Incident Summary</div>
           <h1 style={{ fontSize: "28px", fontWeight: 700, margin: "6px 0 10px", color: "var(--text)" }}>
-            Payroll Data Exfiltration at 04:07 UTC
+            {verdict.headline || verdict.label}
           </h1>
           <div
             className="mono"
             style={{ display: "flex", gap: "16px", fontSize: "11px", color: "var(--text-dim)", flexWrap: "wrap" }}
           >
             <span style={{ color: "var(--lime)" }}>{verdict.confidence}% Confidence</span>
-            <span>Generated: 04:31 UTC · 14 Nov 2026</span>
-            <span>Simulated Dataset (5,124 Events)</span>
+            <span>Simulated Dataset ({summary.events.toLocaleString()} Events)</span>
+            <span>Stress Level {level}% · {deleted.toLocaleString()} Events Deleted</span>
           </div>
-        </div>
+        </header>
 
-        {/* What Happened Narrative */}
-        <div>
-          <h3 className="kicker" style={{ marginBottom: "10px" }}>
-            01 / Narrative of Observed Facts
-          </h3>
-          <div style={{ fontSize: "14px", lineHeight: "1.7", color: "var(--text)" }}>
-            {report.map((item, idx) => (
-              <span key={idx} style={{ marginRight: "6px" }}>
+        <section>
+          <h2 className="kicker" style={{ marginBottom: "10px" }}>01 / Narrative of Observed Facts</h2>
+          <div style={{ fontSize: "14px", lineHeight: 1.7, color: "var(--text)" }}>
+            {report.map((item) => (
+              <span key={`${item.step}-${item.cites.join("-")}`} style={{ marginRight: "6px" }}>
                 {item.text}
                 <button
-                  onClick={() => handleCitationClick(item.step)}
+                  type="button"
+                  aria-label={`Open evidence for step ${item.step}: ${item.cites.join(", ")}`}
+                  onClick={() => openCitation(item.step)}
                   style={{
                     display: "inline-block",
                     padding: "1px 5px",
@@ -99,7 +102,6 @@ export function IncidentReport() {
                     fontFamily: "var(--font-mono)",
                     fontSize: "10px",
                     marginLeft: "4px",
-                    cursor: "pointer",
                   }}
                 >
                   {item.cites.join(", ")} ↗
@@ -107,13 +109,10 @@ export function IncidentReport() {
               </span>
             ))}
           </div>
-        </div>
+        </section>
 
-        {/* Chronological Sequence Table */}
-        <div>
-          <h3 className="kicker" style={{ marginBottom: "10px" }}>
-            02 / Reconstructed Chronology
-          </h3>
+        <section>
+          <h2 className="kicker" style={{ marginBottom: "10px" }}>02 / Reconstructed Chronology</h2>
           <div className="table-container">
             <table>
               <thead>
@@ -125,49 +124,43 @@ export function IncidentReport() {
                 </tr>
               </thead>
               <tbody>
-                {chain.map((c) => (
-                  <tr key={c.step}>
-                    <td>{c.time}</td>
-                    <td className="primary-cell">{c.what}</td>
-                    <td style={{ color: "var(--text-dim)", fontSize: "11px" }}>{c.technique}</td>
-                    <td className="mono" style={{ color: c.confidence >= 80 ? "var(--lime)" : "var(--amber)" }}>
-                      {c.confidence}%
+                {chain.map((step) => (
+                  <tr key={step.step}>
+                    <td>{step.time}</td>
+                    <td className="primary-cell">{step.what}</td>
+                    <td style={{ color: "var(--text-dim)", fontSize: "11px" }}>{step.technique}</td>
+                    <td className="mono" style={{ color: step.confidence >= 80 ? "var(--lime)" : "var(--amber)" }}>
+                      {step.confidence}%
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-        </div>
+        </section>
 
-        {/* What the Logs Cannot Prove */}
-        <div>
-          <h3 className="kicker" style={{ marginBottom: "10px", color: "var(--amber)" }}>
+        <section>
+          <h2 className="kicker" style={{ marginBottom: "10px", color: "var(--amber)" }}>
             03 / Forensic Blind Spots & Known Limitations
-          </h3>
-          <ul style={{ listStyle: "disc", paddingLeft: "20px", fontSize: "13px", color: "var(--text-muted)", lineHeight: "1.7" }}>
-            {limits.map((lim, i) => (
-              <li key={i}>{lim}</li>
-            ))}
+          </h2>
+          <ul style={{ paddingLeft: "20px", fontSize: "13px", color: "var(--text-muted)", lineHeight: 1.7 }}>
+            {limits.map((limit) => <li key={limit}>{limit}</li>)}
           </ul>
-        </div>
+        </section>
 
-        {/* Actions & Approvals */}
-        <div>
-          <h3 className="kicker" style={{ marginBottom: "10px" }}>
-            04 / Incident Response Actions
-          </h3>
+        <section>
+          <h2 className="kicker" style={{ marginBottom: "10px" }}>04 / Incident Response Actions</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-            {actions.map((act) => {
-              const approved = Boolean(approvals[act.id]);
-
+            {actions.map((action) => {
+              const approval = approvals[action.id];
               return (
                 <div
-                  key={act.id}
+                  key={action.id}
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
+                    gap: "16px",
                     padding: "8px 12px",
                     background: "var(--panel-raised)",
                     border: "1px solid var(--border)",
@@ -176,27 +169,30 @@ export function IncidentReport() {
                   }}
                 >
                   <span>
-                    <strong style={{ color: "var(--text-dim)", marginRight: "8px" }}>[{act.kind}]</strong>
-                    {act.text}
+                    <strong style={{ color: "var(--text-dim)", marginRight: "8px" }}>[{action.kind}]</strong>
+                    {action.text}
                   </span>
-                  <span
-                    className={`pill ${approved ? "pill-lime" : ""}`}
-                    style={{ fontSize: "10px" }}
-                  >
-                    {approved ? "Approved" : "Awaiting Authorization"}
+                  <span style={{ display: "grid", justifyItems: "end", gap: "3px", flexShrink: 0 }}>
+                    <span className={`pill ${approval ? "pill-lime" : ""}`} style={{ fontSize: "10px" }}>
+                      {approval ? "Approved" : "Awaiting Authorization"}
+                    </span>
+                    {approval && (
+                      <span style={{ color: "var(--text-dim)", fontSize: "10px" }}>
+                        {approval.approved_by} · {new Date(approval.approved_at).toLocaleString()}
+                      </span>
+                    )}
                   </span>
                 </div>
               );
             })}
           </div>
-        </div>
+        </section>
 
-        {/* Copy Report Button */}
-        <div style={{ borderTop: "1px solid var(--border)", paddingTop: "18px" }}>
-          <button className="btn btn-primary" onClick={handleCopyText}>
-            {copied ? "✓ Copied to Clipboard!" : "Copy Report as Plain Text"}
+        <footer style={{ borderTop: "1px solid var(--border)", paddingTop: "18px" }}>
+          <button className="btn btn-primary" type="button" onClick={copyReport}>
+            {copied ? "Copied to clipboard" : "Copy report as plain text"}
           </button>
-        </div>
+        </footer>
       </div>
     </div>
   );
