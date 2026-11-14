@@ -191,18 +191,18 @@ function NavIcon({ name }: { name: string }) {
     fill: "none",
     stroke: "currentColor",
     strokeWidth: "1.8",
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
+    strokeLinecap: "square" as const,
+    strokeLinejoin: "miter" as const,
   };
 
   switch (name) {
     case "grid":
       return (
         <svg {...props}>
-          <rect x="3" y="3" width="7" height="7" rx="1" />
-          <rect x="14" y="3" width="7" height="7" rx="1" />
-          <rect x="3" y="14" width="7" height="7" rx="1" />
-          <rect x="14" y="14" width="7" height="7" rx="1" />
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" />
         </svg>
       );
     case "graph":

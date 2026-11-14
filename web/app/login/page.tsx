@@ -14,10 +14,8 @@ async function responseDetail(response: Response, fallback: string) {
 const fieldStyle = {
   width: "100%",
   border: "1px solid var(--border-light)",
-  borderRadius: "6px",
   background: "var(--bg)",
-  padding: "10px 12px",
-  outline: "none",
+  padding: "9px 11px",
 } as const;
 
 function useIsolateAuthPage() {
@@ -151,82 +149,21 @@ export default function LoginPage() {
   }
 
   return (
-    <main
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 100,
-        overflowY: "auto",
-        background: "var(--bg)",
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 420px), 1fr))",
-      }}
-    >
-      <section
-        style={{
-          minHeight: "100vh",
-          padding: "clamp(32px, 7vw, 96px)",
-          borderRight: "1px solid var(--border)",
-          background: "var(--sidebar)",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          gap: "48px",
-        }}
-      >
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <span
-              aria-hidden="true"
-              style={{
-                width: "36px",
-                height: "36px",
-                display: "grid",
-                placeItems: "center",
-                borderRadius: "6px",
-                background: "var(--lime)",
-                color: "var(--bg)",
-                fontFamily: "var(--font-mono)",
-                fontWeight: 800,
-              }}
-            >
-              C
-            </span>
-            <strong style={{ letterSpacing: "0.08em" }}>CHIMERA</strong>
+    <main className="login-page">
+      <div className="login-panel">
+        <div className="brand login-brand">
+          <span className="brand-mark" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <line x1="2" y1="4" x2="9" y2="4" />
+              <line x1="5" y1="8" x2="12" y2="8" />
+              <line x1="8" y1="12" x2="14" y2="12" />
+            </svg>
+          </span>
+          <div>
+            <div className="brand-name">Chimera</div>
+            <div className="brand-sub">Log investigation</div>
           </div>
-
-          <h1
-            style={{
-              maxWidth: "540px",
-              marginTop: "clamp(64px, 14vh, 150px)",
-              fontSize: "clamp(32px, 4.5vw, 64px)",
-              lineHeight: 1.02,
-              letterSpacing: "-0.045em",
-            }}
-          >
-            Follow the evidence, not the noise.
-          </h1>
-          <p style={{ maxWidth: "520px", marginTop: "24px", color: "var(--text-muted)", fontSize: "15px" }}>
-            Reconstruct a security incident across scattered logs, test the story against innocent explanations,
-            and keep every conclusion tied to its source.
-          </p>
         </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", color: "var(--text-dim)" }}>
-          <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--lime)" }} />
-          <span style={{ fontSize: "12px" }}>Local, deterministic investigation</span>
-        </div>
-      </section>
-
-      <section
-        style={{
-          minHeight: "100vh",
-          padding: "32px",
-          display: "grid",
-          placeItems: "center",
-        }}
-      >
-        <div style={{ width: "min(100%, 440px)" }}>
           {checking ? (
             <p style={{ color: "var(--text-muted)" }}>Loading</p>
           ) : pendingEmail ? (
@@ -235,7 +172,7 @@ export default function LoginPage() {
                 Account created
               </span>
               <div>
-                <h2 style={{ fontSize: "28px", letterSpacing: "-0.03em" }}>Check your email</h2>
+                <h2 className="login-title">Check your email</h2>
                 <p style={{ marginTop: "10px", color: "var(--text-muted)" }}>
                   We sent a confirmation link to <strong style={{ color: "var(--text)" }}>{pendingEmail}</strong>.
                   Confirm it before opening a case.
@@ -254,13 +191,13 @@ export default function LoginPage() {
             </div>
           ) : (
             <>
-              <div style={{ marginBottom: "28px" }}>
-                <h2 style={{ fontSize: "30px", letterSpacing: "-0.035em" }}>
-                  {mode === "login" ? "Sign in to the case" : "Create an account"}
+              <div style={{ marginBottom: "18px" }}>
+                <h2 className="login-title">
+                  {mode === "login" ? "Sign in" : "Create an account"}
                 </h2>
                 <p style={{ marginTop: "8px", color: "var(--text-muted)" }}>
                   {mode === "login"
-                    ? "Use your assigned account to continue the investigation."
+                    ? "Use the account your team gave you."
                     : "New accounts begin with read-only Viewer access."}
                 </p>
               </div>
@@ -268,20 +205,12 @@ export default function LoginPage() {
               <div
                 role="tablist"
                 aria-label="Account access"
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  padding: "4px",
-                  marginBottom: "20px",
-                  border: "1px solid var(--border)",
-                  borderRadius: "8px",
-                  background: "var(--panel)",
-                }}
+                className="login-tabs"
               >
                 <button
                   role="tab"
                   aria-selected={mode === "login"}
-                  className={mode === "login" ? "btn btn-primary" : "btn"}
+                  className={mode === "login" ? "active" : ""}
                   type="button"
                   onClick={() => chooseMode("login")}
                 >
@@ -290,7 +219,7 @@ export default function LoginPage() {
                 <button
                   role="tab"
                   aria-selected={mode === "signup"}
-                  className={mode === "signup" ? "btn btn-primary" : "btn"}
+                  className={mode === "signup" ? "active" : ""}
                   type="button"
                   onClick={() => chooseMode("signup")}
                 >
@@ -298,7 +227,7 @@ export default function LoginPage() {
                 </button>
               </div>
 
-              <form className="card" onSubmit={submit} style={{ padding: "24px", gap: "18px" }}>
+              <form className="card" onSubmit={submit} style={{ padding: "20px", gap: "16px" }}>
                 {mode === "signup" && (
                   <label style={{ display: "grid", gap: "7px", fontSize: "12px", fontWeight: 600 }}>
                     Name
@@ -348,8 +277,8 @@ export default function LoginPage() {
               </form>
             </>
           )}
-        </div>
-      </section>
+        <p className="login-foot">Simulated company logs. Every number comes from the engine.</p>
+      </div>
     </main>
   );
 }

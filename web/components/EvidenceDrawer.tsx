@@ -29,7 +29,6 @@ export function EvidenceDrawer() {
           <span
             style={{
               padding: "2px 6px",
-              borderRadius: "4px",
               border: "1px solid var(--border-light)",
               fontFamily: "var(--font-mono)",
               fontSize: "10px",
@@ -52,7 +51,7 @@ export function EvidenceDrawer() {
               {step.confidence}% sure
             </span>
           </div>
-          <div style={{ height: "4px", background: "var(--panel-raised)", borderRadius: "2px", overflow: "hidden" }}>
+          <div style={{ height: "4px", background: "var(--panel-raised)", overflow: "hidden" }}>
             <div
               style={{
                 width: `${step.confidence}%`,
@@ -72,7 +71,6 @@ export function EvidenceDrawer() {
           gap: "1px",
           background: "var(--border)",
           border: "1px solid var(--border)",
-          borderRadius: "6px",
           overflow: "hidden",
         }}
       >
@@ -147,7 +145,6 @@ export function EvidenceDrawer() {
                   style={{
                     width: "20px",
                     height: "20px",
-                    borderRadius: "4px",
                     background: "var(--lime-soft)",
                     color: "var(--lime)",
                     fontFamily: "var(--font-mono)",
@@ -163,7 +160,6 @@ export function EvidenceDrawer() {
                 <div
                   style={{
                     background: "var(--panel-raised)",
-                    borderRadius: "4px",
                     padding: "8px 10px",
                     border: "1px solid var(--border)",
                   }}
@@ -210,14 +206,14 @@ export function EvidenceDrawer() {
           onClick={() => setSelectedStep(Math.max(0, selectedStep - 1))}
           disabled={selectedStep === 0}
         >
-          ← Previous Step
+          Previous step
         </button>
         <button
           className="btn btn-small"
           onClick={() => setSelectedStep(Math.min(totalSteps - 1, selectedStep + 1))}
           disabled={selectedStep === totalSteps - 1}
         >
-          Next Step →
+          Next step
         </button>
       </div>
     </div>

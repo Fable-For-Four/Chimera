@@ -97,7 +97,6 @@ export function IncidentReport() {
                   style={{
                     display: "inline-block",
                     padding: "1px 5px",
-                    borderRadius: "3px",
                     background: "var(--lime-soft)",
                     border: "1px solid var(--lime-border)",
                     color: "var(--lime)",
@@ -164,7 +163,6 @@ export function IncidentReport() {
                     padding: "8px 12px",
                     background: "var(--panel-raised)",
                     border: "1px solid var(--border)",
-                    borderRadius: "4px",
                     fontSize: "12px",
                   }}
                 >

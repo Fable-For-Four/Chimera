@@ -285,7 +285,6 @@ export function AttackGraph() {
                     y="-5"
                     width="12"
                     height="10"
-                    rx="1.5"
                     fill="none"
                     stroke={isHit ? "var(--lime)" : isReachable ? "var(--amber)" : "var(--text-dim)"}
                     strokeWidth="1.4"
@@ -375,7 +374,6 @@ export function AttackGraph() {
                   y={60 - h}
                   width={700 / volume.length - 4}
                   height={h}
-                  rx="1.5"
                   fill="var(--border)"
                 />
               );
