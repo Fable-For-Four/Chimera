@@ -68,11 +68,11 @@ export function StressLab() {
       <div className="card">
         <div className="card-header">
           <div>
-            <div className="kicker">Robustness & Log Degradation Testing</div>
-            <h2 className="card-title">Simulate Missing & Delayed Telemetry</h2>
+            <div className="kicker">Pick how much of the log to delete</div>
+            <h2 className="card-title">Missing logs</h2>
           </div>
           <span className="pill pill-amber">
-            Level {shownLevel}% · {deletedCount.toLocaleString()} Logs Dropped
+            {shownLevel}% deleted, {deletedCount.toLocaleString()} logs dropped
           </span>
         </div>
 
@@ -97,11 +97,11 @@ export function StressLab() {
                 marginTop: "4px",
               }}
             >
-              <span>0% (Clean)</span>
+              <span>0%, clean</span>
               <span>10%</span>
               <span>20%</span>
               <span>30%</span>
-              <span>40% (Extreme)</span>
+              <span>40%, extreme</span>
             </div>
           </div>
 
@@ -121,7 +121,7 @@ export function StressLab() {
 
         <p style={{ fontSize: "13px", color: "var(--text-muted)", lineHeight: "1.6" }}>
           {shownLevel === 0
-            ? `Complete telemetry on file (${summary.events.toLocaleString()} events). Move the slider to delete a random percentage of logs and shuffle arrival timestamps to test engine resilience.`
+            ? `Complete telemetry on file (${summary.events.toLocaleString()} events). Move the slider to delete logs at random and delay when the rest arrive.`
             : `${deletedCount.toLocaleString()} events purged and 20% of remaining logs re-ordered. ${
                 !verdict.found
                   ? "No attack chain could be rebuilt from what is left."
@@ -138,8 +138,8 @@ export function StressLab() {
         <div className="card">
           <div className="card-header">
             <div>
-              <div className="kicker">Hypothesis Sensitivity</div>
-              <h3 className="card-title">Explanation Shares vs Corruption (0–40%)</h3>
+              <div className="kicker">How each explanation holds up</div>
+              <h3 className="card-title">Share of belief as logs go missing</h3>
             </div>
           </div>
 
@@ -186,7 +186,7 @@ export function StressLab() {
                 fontFamily="var(--font-mono)"
                 textAnchor="end"
               >
-                50% Threshold
+                50% line
               </text>
 
               {hypotheses.map((hyp, idx) => (
@@ -246,7 +246,7 @@ export function StressLab() {
           {/* Proof Left Table */}
           <div className="card">
             <div className="card-header">
-              <h3 className="card-title">Surviving Proof per Step</h3>
+              <h3 className="card-title">Proof left for each step</h3>
             </div>
 
             <div className="table-container">
@@ -254,9 +254,9 @@ export function StressLab() {
                 <thead>
                   <tr>
                     <th>Step</th>
-                    <th>Exhibits Left</th>
-                    <th>Certainty</th>
-                    <th>Evidence State</th>
+                    <th>Log lines left</th>
+                    <th>Sure</th>
+                    <th>State</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -299,8 +299,8 @@ export function StressLab() {
           {/* Truth Score Benchmark */}
           <div className="card">
             <div className="card-header">
-              <h3 className="card-title">Ground Truth Verification</h3>
-              <span className="pill pill-lime">Verified Against Planted Attack</span>
+              <h3 className="card-title">Checked against the planted attack</h3>
+              <span className="pill pill-lime">Only possible on simulated data</span>
             </div>
 
             <div className="grid-2" style={{ gap: "12px" }}>

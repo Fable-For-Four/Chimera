@@ -77,8 +77,8 @@ export function AttackGraph() {
         }}
       >
         <div>
-          <div className="kicker">Network Entity Topology</div>
-          <h2 className="card-title">Lateral Movement & Attack Path</h2>
+          <div className="kicker">Accounts, machines and outside addresses</div>
+          <h2 className="card-title">Attack path</h2>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
@@ -92,15 +92,15 @@ export function AttackGraph() {
             onClick={handleReplay}
             disabled={isPlaying}
           >
-            {isPlaying ? "Replaying Attack..." : "Replay Attack Sequence ↺"}
+            {isPlaying ? "Replaying..." : "Replay attack"}
           </button>
         </div>
       </div>
 
       {/* Main SVG Attack Canvas */}
-      <div style={{ background: "#0a0e16", position: "relative" }}>
+      <div style={{ background: "var(--sidebar)", position: "relative" }}>
         <svg
-          viewBox="0 0 860 480"
+          viewBox="0 0 860 500"
           className="svg-canvas"
           role="img"
           aria-label="Attack topology graph"
@@ -131,12 +131,12 @@ export function AttackGraph() {
             </marker>
             {/* Grid Pattern */}
             <pattern id="grid-dots" width="24" height="24" patternUnits="userSpaceOnUse">
-              <circle cx="2" cy="2" r="1" fill="#1b2331" />
+              <circle cx="2" cy="2" r="1" fill="var(--border)" />
             </pattern>
           </defs>
 
           {/* Grid background */}
-          <rect width="860" height="480" fill="url(#grid-dots)" />
+          <rect width="860" height="500" fill="url(#grid-dots)" />
 
           {/* Normal Background Edges */}
           {graph.edges.map((edge, i) => {
@@ -151,9 +151,9 @@ export function AttackGraph() {
                 y1={fromNode.y}
                 x2={toNode.x}
                 y2={toNode.y}
-                stroke="#1f293b"
-                strokeWidth="1.2"
-                strokeDasharray="2 3"
+                stroke="var(--border-light)"
+                strokeOpacity="0.55"
+                strokeWidth="1"
               />
             );
           })}
@@ -223,7 +223,7 @@ export function AttackGraph() {
                   cx={midX}
                   cy={midY}
                   r="10"
-                  fill="#0c1018"
+                  fill="var(--bg)"
                   stroke={isSelected ? "var(--text)" : "var(--lime)"}
                   strokeWidth={isSelected ? "2.5" : "1.5"}
                 />
@@ -256,7 +256,7 @@ export function AttackGraph() {
                 {/* Node Outer Circle */}
                 <circle
                   r={isHit ? "18" : isReachable ? "16" : "14"}
-                  fill="#111722"
+                  fill="var(--panel)"
                   stroke={
                     isHit ? "var(--lime)" : isReachable ? "var(--amber)" : "var(--border-light)"
                   }
@@ -324,7 +324,7 @@ export function AttackGraph() {
       >
         <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "var(--lime)" }} />
-          Compromised (Hit)
+          Compromised
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           <span
@@ -335,15 +335,15 @@ export function AttackGraph() {
               border: "1.5px dashed var(--amber)",
             }}
           />
-          Reachable / Downstream Exposure
+          Reachable from a compromised account
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--border-light)" }} />
-          Normal Activity
+          Normal activity
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           <span style={{ width: "14px", height: "2px", background: "var(--lime)" }} />
-          Attack Vector
+          Attack step
         </span>
       </div>
 
@@ -356,7 +356,7 @@ export function AttackGraph() {
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-          <span className="kicker">Correlation Timeline Across 90-Minute Window</span>
+          <span className="kicker">Event volume, with the attack steps pinned</span>
           <span className="mono" style={{ fontSize: "11px", color: "var(--text-dim)" }}>
             03:00 to 04:30 UTC
           </span>
@@ -376,7 +376,7 @@ export function AttackGraph() {
                   width={700 / volume.length - 4}
                   height={h}
                   rx="1.5"
-                  fill="#1b2331"
+                  fill="var(--border)"
                 />
               );
             })}
@@ -426,7 +426,7 @@ export function AttackGraph() {
                     cx={x}
                     cy="14"
                     r="8"
-                    fill={isSelected ? "var(--lime)" : "#0c1018"}
+                    fill={isSelected ? "var(--lime)" : "var(--bg)"}
                     stroke="var(--lime)"
                     strokeWidth="1.5"
                   />
@@ -434,7 +434,7 @@ export function AttackGraph() {
                     x={x}
                     y="17"
                     textAnchor="middle"
-                    fill={isSelected ? "#0c1018" : "var(--lime)"}
+                    fill={isSelected ? "var(--bg)" : "var(--lime)"}
                     fontSize="9"
                     fontFamily="var(--font-mono)"
                     fontWeight="700"

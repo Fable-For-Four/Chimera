@@ -75,10 +75,10 @@ export function EvidenceLog() {
         >
           {(
             [
-              ["all", "All Events"],
-              ["chain", "In Attack Chain"],
-              ["weak", "Weak Signals"],
-              ["late", "Arrived Late"],
+              ["all", "All events"],
+              ["chain", "In the chain"],
+              ["weak", "Weak signals"],
+              ["late", "Arrived late"],
             ] as [FilterType, string][]
           ).map(([key, label]) => (
             <button
@@ -126,12 +126,12 @@ export function EvidenceLog() {
           <table>
             <thead>
               <tr>
-                <th style={{ width: "90px" }}>Event ID</th>
+                <th style={{ width: "90px" }}>Event</th>
                 <th style={{ width: "90px" }}>Time (UTC)</th>
                 <th style={{ width: "110px" }}>Source</th>
-                <th>Raw Event Line & Forensic Context</th>
-                <th style={{ width: "140px" }}>Score & Reasons</th>
-                <th style={{ width: "90px" }}>Chain Step</th>
+                <th>Log line</th>
+                <th style={{ width: "140px" }}>Score</th>
+                <th style={{ width: "90px" }}>Step</th>
               </tr>
             </thead>
             <tbody>
@@ -150,7 +150,7 @@ export function EvidenceLog() {
                       key={ev.id}
                       className={inChain ? "in-chain" : ""}
                       style={{
-                        background: inChain ? "rgba(199, 246, 107, 0.03)" : undefined,
+                        background: inChain ? "var(--accent-soft)" : undefined,
                       }}
                     >
                       <td style={{ color: inChain ? "var(--lime)" : "var(--text-muted)", fontWeight: 600 }}>
@@ -159,21 +159,21 @@ export function EvidenceLog() {
                       <td>{ev.time}</td>
                       <td>{ev.source}</td>
                       <td className="primary-cell">
-                        <div style={{ wordBreak: "break-all" }}>{ev.raw}</div>
+                        <div className="mono" style={{ wordBreak: "break-all", fontSize: "12.5px" }}>{ev.raw}</div>
                         <div style={{ display: "flex", gap: "6px", marginTop: "4px", flexWrap: "wrap" }}>
                           {ev.late && (
                             <span className="pill pill-amber" style={{ fontSize: "9px", padding: "1px 5px" }}>
-                              Late Arrival
+                              Arrived late
                             </span>
                           )}
                           {ev.truth === "missed" && (
                             <span className="pill pill-red" style={{ fontSize: "9px", padding: "1px 5px" }}>
-                              Planted, Missed
+                              Planted, missed
                             </span>
                           )}
                           {ev.truth === "false_link" && (
                             <span className="pill pill-amber" style={{ fontSize: "9px", padding: "1px 5px" }}>
-                              Linked By Mistake
+                              Linked by mistake
                             </span>
                           )}
                         </div>
@@ -222,7 +222,7 @@ export function EvidenceLog() {
                             className="pill pill-lime"
                             style={{ cursor: "pointer", fontSize: "10px", fontWeight: 700 }}
                           >
-                            Step {ev.step} ↗
+                            Step {ev.step}
                           </button>
                         ) : (
                           <span style={{ color: "var(--text-dim)", fontSize: "11px" }}>—</span>
@@ -245,8 +245,8 @@ export function EvidenceLog() {
             color: "var(--text-dim)",
           }}
         >
-          Showing {filteredEvents.length} events (of {caseData.summary.events.toLocaleString()} total in
-          dataset). Green-tinted rows represent confirmed links inside the reconstructed attack chain.
+          Showing {filteredEvents.length.toLocaleString()} of {caseData.summary.events.toLocaleString()} events.
+          Tinted rows are in the attack chain.
         </div>
       </div>
     </div>
