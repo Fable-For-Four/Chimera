@@ -1,13 +1,16 @@
 import importlib.util
 import json
 import os
+import random
 import subprocess
 import sys
+import tempfile
 import threading
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "out"
+NIGHT_DATA = {"attack": ROOT / "data", "quiet": ROOT / "data_dos"}
 SAMPLES_DIR = ROOT / "tests" / "fixtures"
 STRESS_LEVELS = [0, 5, 10, 15, 20, 25, 30, 35, 40]
 ENGINE_TIMEOUT_SECONDS = 120
@@ -58,13 +61,24 @@ def engine_available():
         return False
 
 
-def run_engine():
+def run_engine(night="attack"):
     if not engine_available():
         write_samples()
         return
+    if night == "random":
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp) / "data"
+            seed = str(random.randint(1, 99999))
+            run_module(["generator", "--seed", seed, "--out", str(data_dir)])
+            run_module(["engine.run", str(data_dir), str(OUT_DIR)])
+        return
+    run_module(["engine.run", str(NIGHT_DATA[night]), str(OUT_DIR)])
+
+
+def run_module(args):
     env = {k: v for k, v in os.environ.items() if k not in SECRET_ENV_NAMES}
     result = subprocess.run(
-        [sys.executable, "-m", "engine.run"],
+        [sys.executable, "-m", *args],
         cwd=ROOT,
         env=env,
         stdin=subprocess.DEVNULL,
@@ -94,9 +108,9 @@ def write_samples():
     write_json(OUT_DIR / "case.json", sample_case)
 
 
-def run_investigation(on_success):
+def run_investigation(on_success, night="attack"):
     with lock:
-        run_engine()
+        run_engine(night)
         data = load(OUT_DIR / "case.json")
         if data is not None:
             on_success()

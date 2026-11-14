@@ -32,7 +32,7 @@ def write(path, data):
     path.write_text(json.dumps(data), encoding="utf-8")
 
 
-def fake_engine():
+def fake_engine(night="attack"):
     out = case_files.OUT_DIR
     write(out / "intake.json", INTAKE)
     for level in case_files.STRESS_LEVELS:
@@ -132,7 +132,7 @@ def test_failed_run_is_500_logs_reason_and_keeps_approvals(client, monkeypatch, 
     as_user(client, "analyst").post("/api/case/run")
     client.post("/api/actions/reset-priya.s/approve")
 
-    def broken():
+    def broken(night="attack"):
         raise RuntimeError("Link stage crashed")
 
     monkeypatch.setattr(case_files, "run_engine", broken)
@@ -260,7 +260,7 @@ def test_runs_never_overlap_and_reads_wait_for_the_run(monkeypatch, tmp_path):
     active = []
     overlaps = []
 
-    def slow_engine():
+    def slow_engine(night="attack"):
         active.append(1)
         if len(active) > 1:
             overlaps.append(True)
@@ -376,7 +376,7 @@ def test_real_engine_runs_in_repo_root_without_secrets_or_stdin(monkeypatch):
     monkeypatch.setattr(case_files.subprocess, "run", ok)
     case_files.run_engine()
     cmd, kwargs = calls[0]
-    assert cmd[1:] == ["-m", "engine.run"]
+    assert cmd[1:] == ["-m", "engine.run", str(case_files.ROOT / "data"), str(case_files.OUT_DIR)]
     assert kwargs["cwd"] == case_files.ROOT
     assert kwargs["stdin"] == subprocess.DEVNULL
     assert "JWT_SECRET" not in kwargs["env"]
@@ -408,12 +408,12 @@ def test_approvals_are_cleared_inside_the_run_lock(client, monkeypatch):
     calls = []
     original = case_files.run_investigation
 
-    def spy(on_success):
+    def spy(on_success, night="attack"):
         def wrapped():
             calls.append(case_files.lock._is_owned())
             on_success()
 
-        return original(wrapped)
+        return original(wrapped, night)
 
     monkeypatch.setattr(case_files, "run_investigation", spy)
     assert client.post("/api/case/run").status_code == 200
@@ -423,3 +423,50 @@ def test_approvals_are_cleared_inside_the_run_lock(client, monkeypatch):
 def test_role_change_without_a_role_is_422(client):
     viewer_id = user_id(client, "viewer@acme.test")
     assert client.patch(f"/api/users/{viewer_id}/role", json={}).status_code == 422
+
+
+@pytest.mark.parametrize(
+    "body, night",
+    [
+        (None, "attack"),
+        ({}, "attack"),
+        ({"night": "quiet"}, "quiet"),
+        ({"night": "random"}, "random"),
+    ],
+)
+def test_run_passes_the_chosen_night_to_the_engine(client, monkeypatch, body, night):
+    seen = []
+
+    def recording_engine(night="attack"):
+        seen.append(night)
+        fake_engine()
+
+    monkeypatch.setattr(case_files, "run_engine", recording_engine)
+    as_user(client, "analyst")
+    r = (
+        client.post("/api/case/run", json=body)
+        if body is not None
+        else client.post("/api/case/run")
+    )
+    assert r.status_code == 200
+    assert seen == [night]
+
+
+@pytest.mark.parametrize("night", ["../etc", "data", "ATTACK", 7])
+def test_run_rejects_an_unknown_night(client, night):
+    as_user(client, "analyst")
+    assert client.post("/api/case/run", json={"night": night}).status_code == 422
+
+
+def test_viewer_cannot_run_any_night(client):
+    as_user(client, "viewer")
+    assert client.post("/api/case/run", json={"night": "random"}).status_code == 403
+
+
+@pytest.mark.parametrize("night, found", [("quiet", False), ("random", True)])
+def test_real_engine_runs_each_night(monkeypatch, tmp_path, night, found):
+    monkeypatch.setattr(case_files, "OUT_DIR", tmp_path / "out")
+    case = case_files.run_investigation(lambda: None, night=night)
+    assert case["verdict"]["found"] is found
+    assert (tmp_path / "out" / "intake.json").exists()
+    assert (tmp_path / "out" / "stress" / "40.json").exists()

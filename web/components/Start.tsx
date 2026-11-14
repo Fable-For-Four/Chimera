@@ -3,9 +3,16 @@
 import React from "react";
 import Link from "next/link";
 import { useApp } from "../lib/state";
+import type { Night } from "../lib/types";
+
+const NIGHTS: [Night, string, string][] = [
+  ["attack", "Attack night", "The night with the planted attack (seed 7)"],
+  ["quiet", "Quiet night", "A busy night with no attack in it"],
+  ["random", "Random night", "A new night with the attack, built from a random seed"],
+];
 
 export function Start() {
-  const { intake, user, isRunning, runInvestigation } = useApp();
+  const { intake, user, isRunning, runInvestigation, night, setNight } = useApp();
 
   if (!intake) {
     return (
@@ -109,20 +116,40 @@ export function Start() {
           >
             <div>
               <div style={{ fontWeight: 600, fontSize: "14px", color: "var(--text)" }}>
-                Zero alerts triggered across the whole night.
+                {summary.alerts_fired === 0
+                  ? "No alert fired across the whole night."
+                  : `${summary.alerts_fired} of ${alert_rules.length} alerts fired.`}
               </div>
               <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                Each attack step evaded single-event thresholds. Correlate the timeline.
+                Alert rules read one line at a time. The investigation connects them.
               </div>
             </div>
 
-            <button
-              className="btn btn-primary"
-              onClick={runInvestigation}
-              disabled={isRunning || user?.role === "viewer"}
-            >
-              {isRunning ? "Running Engine Pipeline..." : "Run Multi-Stage Investigation"}
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+              <div className="night-picker" role="radiogroup" aria-label="Which night to investigate">
+                {NIGHTS.map(([value, label, hint]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={night === value}
+                    className={night === value ? "active" : ""}
+                    title={hint}
+                    onClick={() => setNight(value)}
+                    disabled={isRunning}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <button
+                className="btn btn-primary"
+                onClick={runInvestigation}
+                disabled={isRunning || user?.role === "viewer"}
+              >
+                {isRunning ? "Running..." : "Run investigation"}
+              </button>
+            </div>
           </div>
         </div>
 
