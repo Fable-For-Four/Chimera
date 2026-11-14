@@ -24,7 +24,7 @@ export function EvidenceDrawer() {
       <div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
           <span className="kicker" style={{ color: "var(--lime)" }}>
-            Step {step.step} of {totalSteps} · {step.stage}
+            Step {step.step} of {totalSteps}, {step.stage.toLowerCase()}
           </span>
           <span
             style={{
@@ -78,13 +78,13 @@ export function EvidenceDrawer() {
       >
         <div style={{ background: "var(--panel-raised)", padding: "10px 12px" }}>
           <span className="kicker" style={{ display: "block", marginBottom: "2px" }}>
-            30-Day Historical Baseline
+            Usual, over 30 days
           </span>
           <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>{step.usual}</div>
         </div>
         <div style={{ background: "var(--panel-raised)", padding: "10px 12px" }}>
           <span className="kicker" style={{ display: "block", marginBottom: "2px", color: "var(--amber)" }}>
-            Observed Deviation
+            What happened instead
           </span>
           <div style={{ fontSize: "12px", color: "var(--text)", fontWeight: 500 }}>{step.now}</div>
         </div>
@@ -93,7 +93,7 @@ export function EvidenceDrawer() {
       {/* Scoring Signals */}
       <div>
         <div className="kicker" style={{ marginBottom: "8px" }}>
-          Deterministic Scoring Signals ({step.signals.length})
+          Why it scored ({step.signals.length} signals)
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
           {step.signals.map((sig, i) => (
@@ -127,7 +127,7 @@ export function EvidenceDrawer() {
       {/* Exhibits (Log Lines) */}
       <div>
         <div className="kicker" style={{ marginBottom: "8px" }}>
-          Preserved Raw Exhibits ({step.exhibits.length})
+          Log lines ({step.exhibits.length})
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
           {step.exhibits.map((ex, i) => {
@@ -187,12 +187,12 @@ export function EvidenceDrawer() {
                   <div style={{ display: "flex", gap: "6px", marginTop: "4px", flexWrap: "wrap" }}>
                     {ex.late && (
                       <span className="pill pill-amber" style={{ fontSize: "9px", padding: "1px 5px" }}>
-                        Arrived 6m Late (Re-ordered by ts)
+                        Arrived late, sorted by its own time
                       </span>
                     )}
                     {!ex.present && (
                       <span className="pill pill-red" style={{ fontSize: "9px", padding: "1px 5px" }}>
-                        Deleted in Stress Test
+                        Deleted in stress test
                       </span>
                     )}
                   </div>

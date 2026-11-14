@@ -77,8 +77,8 @@ export function AttackGraph() {
         }}
       >
         <div>
-          <div className="kicker">Network Entity Topology</div>
-          <h2 className="card-title">Lateral Movement & Attack Path</h2>
+          <div className="kicker">Accounts, machines and outside addresses</div>
+          <h2 className="card-title">Attack path</h2>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
@@ -92,7 +92,7 @@ export function AttackGraph() {
             onClick={handleReplay}
             disabled={isPlaying}
           >
-            {isPlaying ? "Replaying Attack..." : "Replay Attack Sequence ↺"}
+            {isPlaying ? "Replaying..." : "Replay attack"}
           </button>
         </div>
       </div>
@@ -100,7 +100,7 @@ export function AttackGraph() {
       {/* Main SVG Attack Canvas */}
       <div style={{ background: "var(--sidebar)", position: "relative" }}>
         <svg
-          viewBox="0 0 860 480"
+          viewBox="0 0 860 500"
           className="svg-canvas"
           role="img"
           aria-label="Attack topology graph"
@@ -136,7 +136,7 @@ export function AttackGraph() {
           </defs>
 
           {/* Grid background */}
-          <rect width="860" height="480" fill="url(#grid-dots)" />
+          <rect width="860" height="500" fill="url(#grid-dots)" />
 
           {/* Normal Background Edges */}
           {graph.edges.map((edge, i) => {
@@ -152,8 +152,8 @@ export function AttackGraph() {
                 x2={toNode.x}
                 y2={toNode.y}
                 stroke="var(--border-light)"
-                strokeWidth="1.2"
-                strokeDasharray="2 3"
+                strokeOpacity="0.55"
+                strokeWidth="1"
               />
             );
           })}
@@ -324,7 +324,7 @@ export function AttackGraph() {
       >
         <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "var(--lime)" }} />
-          Compromised (Hit)
+          Compromised
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           <span
@@ -335,15 +335,15 @@ export function AttackGraph() {
               border: "1.5px dashed var(--amber)",
             }}
           />
-          Reachable / Downstream Exposure
+          Reachable from a compromised account
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--border-light)" }} />
-          Normal Activity
+          Normal activity
         </span>
         <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
           <span style={{ width: "14px", height: "2px", background: "var(--lime)" }} />
-          Attack Vector
+          Attack step
         </span>
       </div>
 
@@ -356,7 +356,7 @@ export function AttackGraph() {
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-          <span className="kicker">Correlation Timeline Across 90-Minute Window</span>
+          <span className="kicker">Event volume, with the attack steps pinned</span>
           <span className="mono" style={{ fontSize: "11px", color: "var(--text-dim)" }}>
             03:00 to 04:30 UTC
           </span>
