@@ -20,6 +20,7 @@ venv/
 web/node_modules/
 web/.next/
 web/next-env.d.ts
+web/*.tsbuildinfo
 
 # Logs and OS junk
 *.log
