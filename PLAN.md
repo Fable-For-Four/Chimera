@@ -636,7 +636,7 @@ Cut from the top. Never cut the engine, the graph, the evidence drawer or the si
 
 **Person 3 (frontend core)**
 - A user is `{id, email, name, role, verified}`. Every error is `{"detail": "..."}` with one plain sentence, including `422`.
-- `GET /api/intake`, `/api/case`, `/api/case/stress/{level}` return the files as they are. Before any run, `/api/case` gives `404` "Run the investigation first", which means "show Start".
+- `GET /api/intake`, `/api/case`, `/api/case/stress/{level}` return the files as they are. Before any run, `/api/case` gives `404` "Run the investigation first", which means "show Start". A stress level whose file is missing while the case exists gives `404` "This stress level is not ready yet": keep the case on screen and grey out that level, do not show Start.
 - `POST /api/case/run` returns the new case. A second press waits for the first run, it does not fail. Until A5 merges, Run serves the sample files from `tests/fixtures/`. `GET /api/intake` also falls back to the intake sample whenever `out/intake.json` is missing.
 - `403` "Confirm your email first" means show the "check your email" screen. `403` "Your role cannot do this" means show the message and change nothing.
 
@@ -807,7 +807,7 @@ A user in a response is always `{ "id", "email", "name", "role", "verified" }`, 
 | `GET /api/auth/me` | none | `200` with the user | `401` |
 | `GET /api/intake` | none | `200` with `out/intake.json` | `401`, `403` |
 | `GET /api/case` | none | `200` with `out/case.json` | `401`, `403`, `404` "Run the investigation first" |
-| `GET /api/case/stress/{level}` | none | `200` with that stress file | `401`, `403`, `404` unknown level or no case yet |
+| `GET /api/case/stress/{level}` | none | `200` with that stress file | `401`, `403`, `404` unknown level, "Run the investigation first", or "This stress level is not ready yet" |
 | `POST /api/case/run` | none | `200` with the fresh case. Runs `engine.run` and waits for it. | `401`, `403`, `500` "The investigation failed" with the reason in the server log |
 | `POST /api/actions/{id}/approve` | none | `201` with `action_id`, `approved_by` (name), `approved_at` | `401`, `403`, `404` action not in the current case, `409` already approved |
 | `GET /api/approvals` | none | `200` with a list of `action_id`, `approved_by`, `approved_at` | `401`, `403` |
