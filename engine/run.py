@@ -1,4 +1,4 @@
-"""python -m engine.run: read data/, write out/case.json and out/stress/00.json, print the chain (PLAN 6.11)."""
+"""python -m engine.run: read data/, write out/, print the chain (PLAN 6.11)."""
 
 import json
 import os
@@ -11,6 +11,7 @@ from pathlib import Path
 from engine.challenge import challenge
 from engine.link import CANDIDATE, link
 from engine.profile import Profile
+from engine.report import write_report
 from engine.score import score_events
 from engine.sort import parse, sort_events
 from engine.truth import load_planted, score_truth
@@ -41,7 +42,7 @@ def load_data(data_dir):
 
 
 def summary_and_volume(ordered):
-    # ponytail: stand-in until B3 merges; then take summary and volume from engine/intake.py instead.
+    # ponytail: stand-in until B3 merges, then take summary and volume from engine/intake.py.
     buckets = Counter()
     for e in ordered:
         t = parse(e["ts"])
@@ -56,7 +57,7 @@ def summary_and_volume(ordered):
 
 
 def case_events(arrival, scored, chain_events, planted, steps):
-    """Every weak signal, 40 normal events picked with a fixed seed, and every planted event, in arrival order."""
+    """Weak signals, 40 seeded normal events and every planted event, in arrival order."""
     by_id = {e["id"]: e for e in scored}
     step_of = {e["id"]: e["step"] for e in chain_events}
     normal = sorted(e["id"] for e in scored if e["score"] < CANDIDATE)
@@ -122,8 +123,15 @@ def investigate(events, files, planted, level=0, deleted=0):
         linked["confidence"],
         set(files["history"]["service_accounts"]),
     )
-    stages.append(
-        {"name": "Report", "does": DOES["Report"], "result": "Not built yet", "seconds": 0}
+    case_list = case_events(events, scored, linked["events"], planted, steps)
+    written = timed(
+        stages,
+        "Report",
+        write_report,
+        linked,
+        judged["verdict"]["blast_radius"]["reachable"],
+        {e["id"] for e in case_list},
+        set(files["history"]["service_accounts"]),
     )
 
     truth_score, _ = score_truth(planted, steps, scored)
@@ -138,12 +146,12 @@ def investigate(events, files, planted, level=0, deleted=0):
         "graph": judged["graph"],
         "volume": volume,
         "hypotheses": hypotheses,
-        "events": case_events(events, scored, linked["events"], planted, steps),
+        "events": case_list,
         "truth_score": truth_score,
-        "report": [],  # A4
-        "limits": [],  # A4
+        "report": written["report"],
+        "limits": written["limits"],
         "actions": judged["actions"],
-        "questions": [],  # A4
+        "questions": written["questions"],
     }
 
 
@@ -167,7 +175,7 @@ def run(data_dir="data", out_dir="out"):
     out_dir = Path(out_dir)
     events, files, planted = load_data(data_dir)
     case = investigate(events, files, planted)
-    # ponytail: only level 0 until A6 (stress.py) merges; drop stale levels so no sample data is served as real.
+    # ponytail: only level 0 until A6 merges; drop stale levels so samples are never served as real.
     for level in STRESS_LEVELS[1:]:
         (out_dir / "stress" / f"{level:02d}.json").unlink(missing_ok=True)
     write_json(out_dir / "stress" / "00.json", case)
