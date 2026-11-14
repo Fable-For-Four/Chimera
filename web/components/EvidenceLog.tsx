@@ -168,7 +168,7 @@ export function EvidenceLog() {
                               Planted, missed
                             </span>
                           )}
-                          {ev.truth === "false_link" && (
+                          {ev.truth === "false_link" && caseData.truth_score.planted > 0 && (
                             <span className="pill pill-amber" style={{ fontSize: "9px", padding: "1px 5px" }}>
                               Linked by mistake
                             </span>

@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 
 from api import auth, case_files, db
 from api import email as mailer
+from api import main as api_main
 from api.main import app
 from api.seed import seed
 
@@ -485,3 +486,109 @@ def test_real_engine_gives_each_test_case_its_verdict(
     assert sum(s["inferred"] for s in case["chain"]) == inferred
     assert (tmp_path / "out" / "intake.json").exists()
     assert (tmp_path / "out" / "stress" / "40.json").exists()
+
+
+def raw_attack_night():
+    with open(case_files.BASELINE_DIR / "events.jsonl", encoding="utf-8") as f:
+        rows = [json.loads(line) for line in f if line.strip()]
+    rows.sort(key=lambda row: row["received_at"])
+    return "".join(row["raw"] + "\n" for row in rows)
+
+
+def test_upload_runs_the_real_engine_on_raw_lines(client):
+    as_user(client, "analyst")
+    r = client.post(
+        "/api/case/upload?name=C:\\logs\\night.log", content=raw_attack_night() + "not a log line\n"
+    )
+    assert r.status_code == 200
+    assert r.json() == {"events": 5124, "unparsed": 1, "formats": {"key=value": 5124}}
+    assert client.get("/api/case/version").json()["source"] == {
+        "kind": "upload",
+        "name": "night.log",
+        **r.json(),
+    }
+    case = client.get("/api/case").json()
+    assert case["verdict"]["found"] is True
+    assert [s["stage"] for s in case["chain"]][-1] == "Exfiltration"
+    assert case["truth_score"]["planted"] == 0
+    assert client.get("/api/intake").json()["summary"]["events"] == 5124
+    assert client.get("/api/case/stress/40").status_code == 200
+
+
+def test_viewer_cannot_upload(client):
+    r = as_user(client, "viewer").post("/api/case/upload", content="03:00:00 dc LOGON user=a")
+    assert r.status_code == 403
+
+
+@pytest.mark.parametrize(
+    "body, status, detail",
+    [
+        ("", 422, "The file is empty"),
+        ("  \n\n", 422, "The file is empty"),
+        ("hello\nworld\n", 422, "None of the 2 lines could be read as a log line"),
+        (
+            '{"ts": "2026-11-13T03:00:00Z", "user": "a"}\n'
+            '{"ts": "2026-11-14T03:00:01Z", "user": "a"}\n',
+            422,
+            "The lines cover 25 hours. Upload at most 24 hours of logs at a time",
+        ),
+    ],
+)
+def test_unusable_upload_is_rejected_and_keeps_the_case(client, body, status, detail):
+    as_user(client, "analyst").post("/api/case/run")
+    client.post("/api/actions/reset-priya.s/approve")
+    r = client.post("/api/case/upload", content=body)
+    assert r.status_code == status
+    assert r.json() == {"detail": detail}
+    assert client.get("/api/case").json() == CASE
+    assert len(client.get("/api/approvals").json()) == 1
+
+
+def test_upload_over_the_limit_is_413(client, monkeypatch):
+    monkeypatch.setattr(api_main, "UPLOAD_LIMIT_BYTES", 10)
+    r = as_user(client, "analyst").post("/api/case/upload", content="03:00:00 dc LOGON user=abc")
+    assert r.status_code == 413
+
+
+def test_failed_upload_engine_keeps_the_old_case_and_approvals(client, monkeypatch, caplog):
+    as_user(client, "analyst").post("/api/case/run")
+    client.post("/api/actions/reset-priya.s/approve")
+
+    def broken(args):
+        raise RuntimeError("Link stage crashed")
+
+    monkeypatch.setattr(case_files, "run_module", broken)
+    with caplog.at_level(logging.ERROR, logger="chimera.api"):
+        r = client.post("/api/case/upload", content="03:00:00 dc LOGON user=abc")
+    assert r.status_code == 500
+    assert r.json() == {"detail": "The investigation failed"}
+    assert "Link stage crashed" in caplog.text
+    assert "user=abc" not in caplog.text
+    assert client.get("/api/case").json() == CASE
+    assert len(client.get("/api/approvals").json()) == 1
+
+
+def test_upload_clears_approvals_from_the_previous_case(client):
+    as_user(client, "analyst").post("/api/case/run")
+    client.post("/api/actions/reset-priya.s/approve")
+    assert client.post("/api/case/upload", content=raw_attack_night()).status_code == 200
+    assert client.get("/api/approvals").json() == []
+
+
+def test_version_changes_when_the_case_or_approvals_change(client):
+    as_user(client, "viewer")
+    assert client.get("/api/case/version").json() == {"case": None, "approvals": 0, "source": None}
+    as_user(client, "analyst").post("/api/case/run", json={"night": "spray"})
+    first = client.get("/api/case/version").json()
+    assert first["case"] is not None
+    assert first["source"] == {"kind": "simulated", "name": "spray"}
+    client.post("/api/actions/reset-priya.s/approve")
+    assert client.get("/api/case/version").json() == {**first, "approvals": 1}
+    time.sleep(0.01)
+    client.post("/api/case/run")
+    assert client.get("/api/case/version").json()["case"] != first["case"]
+
+
+def test_version_needs_sign_in(client):
+    client.cookies.clear()
+    assert client.get("/api/case/version").status_code == 401

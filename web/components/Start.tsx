@@ -1,8 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useApp } from "../lib/state";
+import { timeWindow } from "../lib/time";
 import type { Night } from "../lib/types";
 
 const CASES: [Night, string, string][] = [
@@ -16,7 +17,9 @@ const CASES: [Night, string, string][] = [
 ];
 
 export function Start() {
-  const { intake, user, isRunning, runInvestigation, night, setNight } = useApp();
+  const { intake, user, isRunning, runInvestigation, uploadLogs, night, setNight } = useApp();
+  const [file, setFile] = useState<File | null>(null);
+  const isViewer = user?.role === "viewer";
 
   if (!intake) {
     return (
@@ -56,7 +59,7 @@ export function Start() {
         {/* Left: Volume & CTA */}
         <div className="card">
           <div className="card-header">
-            <h2 className="card-title">Events per 5 minutes, 03:00 to 04:30 UTC</h2>
+            <h2 className="card-title">Events per 5 minutes, {timeWindow(volume)}</h2>
           </div>
 
           {/* SVG Volume Bars */}
@@ -139,9 +142,31 @@ export function Start() {
                 className="btn btn-primary"
                 style={{ marginTop: "21px" }}
                 onClick={runInvestigation}
-                disabled={isRunning || user?.role === "viewer"}
+                disabled={isRunning || isViewer}
               >
                 {isRunning ? "Running..." : "Run investigation"}
+              </button>
+            </div>
+
+            <div className="upload-row">
+              <label className="case-picker">
+                <span>Or upload your own logs</span>
+                <input
+                  type="file"
+                  accept=".log,.txt,.jsonl,.json,.csv"
+                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                  disabled={isRunning || isViewer}
+                />
+                <small>Key=value, JSON lines, CSV or syslog. One night of logs at a time.</small>
+              </label>
+              <button
+                className="btn"
+                style={{ marginTop: "21px" }}
+                onClick={() => file && uploadLogs(file)}
+                disabled={!file || isRunning || isViewer}
+                title={isViewer ? "Viewers cannot start a run" : undefined}
+              >
+                Upload and investigate
               </button>
             </div>
           </div>

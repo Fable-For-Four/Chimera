@@ -74,6 +74,11 @@ def test_json_aliases_map_and_offset_converts_to_utc():
     assert event["source"] == "unknown"
 
 
+def test_whole_numbers_in_text_become_numbers_but_codes_stay_text():
+    event = parse_one("03:00:00 files FILE_READ user=a files=1412 bytes_out=0 zip=007 ratio=1.5")
+    assert event["attrs"] == {"files": 1412, "bytes_out": 0, "zip": "007", "ratio": "1.5"}
+
+
 def test_json_numbers_stay_numbers_and_nested_dict_becomes_compact_string():
     line = '{"ts": "2026-11-14T03:00:00Z", "port": 443, "ratio": 1.5, "meta": {"a": 1, "b": [2]}}'
     event = parse_one(line)

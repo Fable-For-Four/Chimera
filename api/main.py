@@ -2,12 +2,14 @@ import logging
 import os
 import sqlite3
 from contextlib import asynccontextmanager
+from pathlib import PurePosixPath
 from typing import Literal
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, EmailStr, Field, field_validator
+from starlette.concurrency import run_in_threadpool
 
 from api import case_files
 from api import email as mailer
@@ -28,6 +30,7 @@ from api.db import get_db, init_db, now_iso
 from api.permissions import DEFAULT_ROLE, ROLE_PERMISSIONS, require
 
 logger = logging.getLogger("chimera.api")
+UPLOAD_LIMIT_BYTES = 10 * 1024 * 1024
 
 
 @asynccontextmanager
@@ -224,6 +227,60 @@ def run_case(body: RunBody | None = None, user=Depends(require("case:run")), db=
         logger.error("The investigation failed: the engine wrote no case.json")
         raise HTTPException(status_code=500, detail="The investigation failed")
     return JSONResponse(content=data)
+
+
+@app.get("/api/case/version")
+def get_case_version(user=Depends(require("case:read")), db=Depends(get_db)):
+    approvals = db.execute("SELECT COUNT(*) FROM approvals").fetchone()[0]
+    return {
+        "case": case_files.case_version(),
+        "approvals": approvals,
+        "source": case_files.source(),
+    }
+
+
+async def read_upload(request):
+    body = bytearray()
+    async for chunk in request.stream():
+        body += chunk
+        if len(body) > UPLOAD_LIMIT_BYTES:
+            raise HTTPException(status_code=413, detail="The file is larger than 10 MB")
+    text = body.decode("utf-8", errors="replace")
+    if not text.strip():
+        raise HTTPException(status_code=422, detail="The file is empty")
+    return text
+
+
+def file_label(name):
+    return PurePosixPath(name.replace("\\", "/")).name.strip()[:120] or "uploaded file"
+
+
+@app.post("/api/case/upload")
+async def upload_logs(
+    request: Request, name: str = "", user=Depends(require("case:run")), db=Depends(get_db)
+):
+    def clear_approvals():
+        db.execute("DELETE FROM approvals")
+        db.commit()
+
+    text = await read_upload(request)
+    try:
+        result = await run_in_threadpool(
+            case_files.run_upload, text, file_label(name), clear_approvals
+        )
+    except case_files.NoReadableLines as exc:
+        raise HTTPException(
+            status_code=422, detail=f"None of the {exc.unparsed} lines could be read as a log line"
+        ) from None
+    except case_files.SpanTooLong as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=f"The lines cover {exc.hours} hours. Upload at most 24 hours of logs at a time",
+        ) from None
+    except Exception as exc:
+        logger.error("The upload investigation failed: %s", exc)
+        raise HTTPException(status_code=500, detail="The investigation failed") from None
+    return result
 
 
 @app.post("/api/actions/{action_id}/approve", status_code=201)

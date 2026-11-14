@@ -24,6 +24,7 @@ TIME_OF_DAY = re.compile(r"^\d{2}:\d{2}:\d{2}$")
 DATE_ONLY = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 MONTHS = ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
 EPOCH = re.compile(r"^\d{9,13}(\.\d+)?$")
+WHOLE_NUMBER = re.compile(r"^(0|-?[1-9]\d{0,17})$")
 SYSLOG_5424 = re.compile(r"^<\d{1,3}>1 (\S+) (\S+) (\S+) \S+ \S+ (-|(?:\[[^\]]*\])+) ?(.*)$")
 SYSLOG_3164 = re.compile(
     r"^<\d{1,3}>([A-Z][a-z]{2} [ \d]\d \d{2}:\d{2}:\d{2}) (\S+) ([^:\[\s]+)(?:\[\d+\])?: ?(.*)$"
@@ -70,6 +71,14 @@ def as_text(value):
     return str(value).strip()
 
 
+def attr_value(value):
+    if isinstance(value, dict | list):
+        return as_text(value)
+    if isinstance(value, str) and WHOLE_NUMBER.match(value):
+        return int(value)
+    return value
+
+
 def is_empty(value):
     return value is None or (isinstance(value, str) and not value.strip())
 
@@ -100,7 +109,7 @@ def to_event(fields, raw, number, day):
         elif field and field != "ts" and event[field] is None:
             event[field] = as_text(value)
             continue
-        event["attrs"][name] = as_text(value) if isinstance(value, dict | list) else value
+        event["attrs"][name] = attr_value(value)
     if event["ts"] is None:
         raise ValueError("no readable time")
     event["received_at"] = event["ts"]
