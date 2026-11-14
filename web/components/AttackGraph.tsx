@@ -40,6 +40,28 @@ function NodeIcon({ type }: { type: GraphNode["type"] }) {
   );
 }
 
+const BADGE_SPOTS = [0.5, 0.42, 0.58, 0.35, 0.65, 0.28, 0.72];
+
+function badgeSpot(from: GraphNode, to: GraphNode, nodes: GraphNode[]) {
+  const clearance = (x: number, y: number) =>
+    Math.min(
+      ...nodes.map((n) => {
+        const r = RADIUS[n.state];
+        const toNode = Math.hypot(x - n.x, y - n.y) - r;
+        const toLabel = Math.hypot((x - n.x) / 2.2, y - (n.y + r + 11)) - 6;
+        return Math.min(toNode, toLabel);
+      }),
+    );
+  let best = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2, room: -Infinity };
+  for (const t of BADGE_SPOTS) {
+    const x = from.x + (to.x - from.x) * t;
+    const y = from.y + (to.y - from.y) * t;
+    const room = clearance(x, y);
+    if (room > best.room + 4) best = { x, y, room };
+  }
+  return best;
+}
+
 function edgeGeometry(from: GraphNode, to: GraphNode) {
   const dx = to.x - from.x;
   const dy = to.y - from.y;
@@ -56,8 +78,6 @@ function edgeGeometry(from: GraphNode, to: GraphNode) {
     lineEndX: to.x - ux * (end + ARROW - 1),
     lineEndY: to.y - uy * (end + ARROW - 1),
     angle: (Math.atan2(dy, dx) * 180) / Math.PI,
-    midX: (from.x + to.x) / 2,
-    midY: (from.y + to.y) / 2,
   };
 }
 
@@ -204,6 +224,7 @@ export function AttackGraph() {
             if (!fromNode || !toNode) return null;
 
             const g = edgeGeometry(fromNode, toNode);
+            const badge = badgeSpot(fromNode, toNode, nodes);
             const isSelected = selectedStep === idx;
             const kind = st.inferred ? "inferred" : "seen";
 
@@ -237,7 +258,7 @@ export function AttackGraph() {
                     />
                   </circle>
                 )}
-                <g transform={`translate(${g.midX} ${g.midY})`} className="g-badge">
+                <g transform={`translate(${badge.x} ${badge.y})`} className="g-badge">
                   <rect x="-10" y="-10" width="20" height="20" />
                   <text y="3.5" textAnchor="middle">
                     {st.step}
