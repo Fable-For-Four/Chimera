@@ -188,6 +188,31 @@ def test_stress_levels(client):
         assert client.get(f"/api/case/stress/{bad}").status_code == 404
 
 
+def test_stress_says_run_first_before_any_case(client):
+    r = as_user(client, "viewer").get("/api/case/stress/0")
+    assert r.status_code == 404
+    assert r.json() == {"detail": "Run the investigation first"}
+
+
+def test_a_missing_stress_level_says_not_ready_when_the_case_exists(client):
+    as_user(client, "analyst").post("/api/case/run")
+    (case_files.OUT_DIR / "stress" / "20.json").unlink()
+    r = client.get("/api/case/stress/20")
+    assert r.status_code == 404
+    assert r.json() == {"detail": "This stress level is not ready yet"}
+    assert client.get("/api/case/stress/0").status_code == 200
+
+
+def test_every_level_but_zero_is_not_ready_when_only_level_zero_exists(client):
+    as_user(client, "analyst").post("/api/case/run")
+    for level in case_files.STRESS_LEVELS[1:]:
+        (case_files.OUT_DIR / "stress" / f"{level:02d}.json").unlink()
+    assert client.get("/api/case/stress/0").status_code == 200
+    for level in case_files.STRESS_LEVELS[1:]:
+        r = client.get(f"/api/case/stress/{level}")
+        assert r.json() == {"detail": "This stress level is not ready yet"}
+
+
 def test_intake_uses_engine_output_then_falls_back_to_the_sample(client):
     as_user(client, "viewer")
     assert client.get("/api/intake").status_code == 404

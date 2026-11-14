@@ -193,9 +193,13 @@ def get_case(user=Depends(require("case:read"))):
 def get_stress(level: str, user=Depends(require("case:read"))):
     if level not in {str(n) for n in case_files.STRESS_LEVELS}:
         raise HTTPException(status_code=404, detail="Unknown stress level")
-    data = case_files.stress(int(level))
-    if data is None:
+    with case_files.lock:
+        data = case_files.stress(int(level))
+        has_case = data is not None or case_files.case() is not None
+    if not has_case:
         raise no_case()
+    if data is None:
+        raise HTTPException(status_code=404, detail="This stress level is not ready yet")
     return JSONResponse(content=data)
 
 
