@@ -30,21 +30,32 @@ export function Overview() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
       <div className="card">
-        <div>
-          <div>
+        <div className="verdict-hero">
+          <div className="verdict-ring">
+            <svg viewBox="0 0 110 110" aria-hidden="true">
+              <circle cx="55" cy="55" r="46" fill="none" stroke="var(--panel-raised)" strokeWidth="8" />
+              <circle
+                cx="55"
+                cy="55"
+                r="46"
+                fill="none"
+                stroke={confidence >= 70 ? "var(--accent)" : "var(--amber)"}
+                strokeWidth="8"
+                strokeDasharray="289"
+                strokeDashoffset={289 * (1 - confidence / 100)}
+                style={{ transition: "stroke-dashoffset 0.5s ease" }}
+              />
+            </svg>
+            <div className="verdict-ring-label">
+              <strong>{confidence}%</strong>
+              <span>confidence</span>
+            </div>
+          </div>
+          <div style={{ flex: 1, minWidth: "280px" }}>
             <div className="verdict-line">
               <h1>{verdict.label}</h1>
-              <span className={`verdict-conf ${confidence >= 70 ? "strong" : "weak"}`}>{confidence}% confidence</span>
             </div>
-            <div className="verdict-meter" aria-hidden="true">
-              <span
-                style={{
-                  width: `${confidence}%`,
-                  background: confidence >= 70 ? "var(--accent)" : "var(--amber)",
-                }}
-              />
-            </div>
-            <p style={{ fontSize: "14px", color: "var(--text-muted)", maxWidth: "800px", lineHeight: "1.6" }}>
+            <p style={{ fontSize: "14px", color: "var(--text-muted)", maxWidth: "800px", lineHeight: "1.6", marginTop: "6px" }}>
               {verdict.headline}
             </p>
 
