@@ -2,6 +2,7 @@ import logging
 import os
 import sqlite3
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime
 from pathlib import PurePosixPath
 from typing import Literal
 
@@ -11,7 +12,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from starlette.concurrency import run_in_threadpool
 
-from api import case_files
+from api import case_files, report_md
 from api import email as mailer
 from api.auth import (
     MAX_PASSWORD_BYTES,
@@ -227,6 +228,29 @@ def run_case(body: RunBody | None = None, user=Depends(require("case:run")), db=
         logger.error("The investigation failed: the engine wrote no case.json")
         raise HTTPException(status_code=500, detail="The investigation failed")
     return JSONResponse(content=data)
+
+
+@app.get("/api/case/report.md")
+def get_report_markdown(level: int = 0, user=Depends(require("case:read")), db=Depends(get_db)):
+    if level not in case_files.STRESS_LEVELS:
+        raise HTTPException(status_code=404, detail="Unknown stress level")
+    with case_files.lock:
+        data = case_files.stress(level) if level else case_files.case()
+        source = case_files.source()
+    if data is None:
+        raise no_case()
+    rows = db.execute(
+        "SELECT a.action_id, u.name AS approved_by, a.approved_at"
+        " FROM approvals a LEFT JOIN users u ON u.id = a.user_id"
+    ).fetchall()
+    approvals = {row["action_id"]: dict(row) for row in rows}
+    exported_at = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
+    text = report_md.build(data, approvals, source, exported_at)
+    return Response(
+        content=text,
+        media_type="text/markdown; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="chimera-incident-report.md"'},
+    )
 
 
 @app.get("/api/case/version")

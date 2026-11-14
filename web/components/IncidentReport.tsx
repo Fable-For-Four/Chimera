@@ -7,7 +7,7 @@ import { useApp } from "../lib/state";
 
 export function IncidentReport() {
   const router = useRouter();
-  const { caseData, setSelectedStep, approvals } = useApp();
+  const { caseData, setSelectedStep, approvals, source } = useApp();
   const [copied, setCopied] = useState(false);
 
   if (!caseData || !caseData.report) {
@@ -30,7 +30,9 @@ export function IncidentReport() {
       "CHIMERA INCIDENT INVESTIGATION REPORT",
       `Confidence: ${verdict.confidence}%`,
       `Status: ${verdict.label}`,
-      `Dataset: Simulated (${summary.events.toLocaleString()} events)`,
+      source?.kind === "upload"
+        ? `Dataset: ${source.name} (${summary.events.toLocaleString()} events)`
+        : `Dataset: Simulated (${summary.events.toLocaleString()} events)`,
       `Stress level: ${level}% (${deleted.toLocaleString()} events deleted)`,
       "",
       "--- WHAT HAPPENED ---",
@@ -77,7 +79,11 @@ export function IncidentReport() {
             style={{ display: "flex", gap: "16px", fontSize: "11px", color: "var(--text-dim)", flexWrap: "wrap" }}
           >
             <span style={{ color: "var(--lime)" }}>{verdict.confidence}% confidence</span>
-            <span>{summary.events.toLocaleString()} simulated events</span>
+            <span>
+              {source?.kind === "upload"
+                ? `${summary.events.toLocaleString()} events from ${source.name}`
+                : `${summary.events.toLocaleString()} simulated events`}
+            </span>
             <span>
               Stress level {level}%, {deleted.toLocaleString()} events deleted
             </span>
@@ -186,8 +192,13 @@ export function IncidentReport() {
           </div>
         </section>
 
-        <footer style={{ borderTop: "1px solid var(--border)", paddingTop: "18px" }}>
-          <button className="btn btn-primary" type="button" onClick={copyReport}>
+        <footer
+          style={{ borderTop: "1px solid var(--border)", paddingTop: "18px", display: "flex", gap: "10px", flexWrap: "wrap" }}
+        >
+          <a className="btn btn-primary" href={`/api/case/report.md?level=${level}`} download>
+            Download as Markdown
+          </a>
+          <button className="btn" type="button" onClick={copyReport}>
             {copied ? "Copied to clipboard" : "Copy report as plain text"}
           </button>
         </footer>

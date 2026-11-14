@@ -589,6 +589,37 @@ def test_version_changes_when_the_case_or_approvals_change(client):
     assert client.get("/api/case/version").json()["case"] != first["case"]
 
 
+def install_sample_case():
+    sample = json.loads((case_files.ROOT / "tests" / "fixtures" / "case.sample.json").read_text())
+    write(case_files.OUT_DIR / "case.json", sample)
+    write(case_files.OUT_DIR / "stress" / "20.json", {**sample, "level": 20, "deleted": 1025})
+    return sample
+
+
+def test_report_markdown_downloads_for_a_viewer_with_approvals(client):
+    sample = install_sample_case()
+    as_user(client, "analyst").post(f"/api/actions/{sample['actions'][0]['id']}/approve")
+    r = as_user(client, "viewer").get("/api/case/report.md")
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "text/markdown; charset=utf-8"
+    assert r.headers["content-disposition"] == 'attachment; filename="chimera-incident-report.md"'
+    assert r.text.startswith("# Incident report: Likely attack")
+    assert "- [x] " in r.text and "approved by" in r.text
+
+
+def test_report_markdown_follows_the_stress_level(client):
+    install_sample_case()
+    r = as_user(client, "viewer").get("/api/case/report.md?level=20")
+    assert "**Stress test:** 20% of logs deleted (1,025 events)" in r.text
+    assert as_user(client, "viewer").get("/api/case/report.md?level=7").status_code == 404
+
+
+def test_report_markdown_is_404_before_a_run_and_needs_sign_in(client):
+    assert as_user(client, "viewer").get("/api/case/report.md").status_code == 404
+    client.cookies.clear()
+    assert client.get("/api/case/report.md").status_code == 401
+
+
 def test_version_needs_sign_in(client):
     client.cookies.clear()
     assert client.get("/api/case/version").status_code == 401
