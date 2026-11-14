@@ -10,9 +10,6 @@ import {
   postRunInvestigation,
   postApproveAction,
   getApprovals,
-  DEFAULT_USER,
-  SAMPLE_INTAKE,
-  SAMPLE_CASE,
 } from "./api";
 
 interface AppContextType {
@@ -36,9 +33,9 @@ interface AppContextType {
 const AppContext = createContext<AppContextType | null>(null);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(DEFAULT_USER);
-  const [intake, setIntake] = useState<IntakeData | null>(SAMPLE_INTAKE);
-  const [caseData, setCaseData] = useState<CaseData | null>(SAMPLE_CASE);
+  const [user, setUser] = useState<User | null>(null);
+  const [intake, setIntake] = useState<IntakeData | null>(null);
+  const [caseData, setCaseData] = useState<CaseData | null>(null);
   const [selectedStep, setSelectedStep] = useState<number>(0);
   const [stressLevel, setStressLevelState] = useState<number>(0);
   const [isRunning, setIsRunning] = useState<boolean>(false);
@@ -99,9 +96,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setError(null);
     try {
       const result = await postRunInvestigation();
-      // Do NOT clear isRunning here — RunningStage animation calls
-      // finishInvestigation() when it completes (~3.5s). Clearing it
-      // here (after ~1.2s timeout) would unmount RunningStage early.
+      // Do NOT clear isRunning here: the RunningStage animation calls
+      // finishInvestigation() when it completes (~3.5s).
       setCaseData(result);
       setSelectedStep(0);
       setStressLevelState(0);
