@@ -186,8 +186,13 @@ export function IncidentReport() {
           </div>
         </section>
 
-        <footer style={{ borderTop: "1px solid var(--border)", paddingTop: "18px" }}>
-          <button className="btn btn-primary" type="button" onClick={copyReport}>
+        <footer
+          style={{ borderTop: "1px solid var(--border)", paddingTop: "18px", display: "flex", gap: "10px", flexWrap: "wrap" }}
+        >
+          <a className="btn btn-primary" href={`/api/case/report.md?level=${level}`} download>
+            Download as Markdown
+          </a>
+          <button className="btn" type="button" onClick={copyReport}>
             {copied ? "Copied to clipboard" : "Copy report as plain text"}
           </button>
         </footer>
