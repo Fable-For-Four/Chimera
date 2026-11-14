@@ -1,0 +1,283 @@
+{
+  "level": 0,
+  "deleted": 0,
+  "summary": {
+    "events": 5124,
+    "sources": 4,
+    "late": 212,
+    "alerts_fired": 0
+  },
+  "stages": [
+    { "name": "Sort", "does": "Put every event in true time order", "result": "212 late events moved", "seconds": 0.4 },
+    { "name": "Profile", "does": "Learn what is normal for each user and machine", "result": "70 baselines from 30 days", "seconds": 1.1 },
+    { "name": "Score", "does": "Mark events that break their baseline", "result": "37 weak signals", "seconds": 0.6 },
+    { "name": "Link", "does": "Join signals that share a user or machine", "result": "1 chain, 5 steps, 11 events", "seconds": 0.3 },
+    { "name": "Challenge", "does": "Try innocent explanations against the chain", "result": "2 tested, both weaker", "seconds": 0.5 },
+    { "name": "Report", "does": "Write the verdict with a log line for every claim", "result": "5 claims, 5 citations", "seconds": 2.2 }
+  ],
+  "verdict": {
+    "label": "Likely attack",
+    "confidence": 87,
+    "found": true,
+    "headline": "A stolen password became a domain admin in 29 minutes. Payroll data started leaving 55 minutes after the first sign-in.",
+    "entry_point": {
+      "account": "priya.s",
+      "event": "L-1881",
+      "text": "priya.s over VPN, from a country she has never signed in from"
+    },
+    "blast_radius": {
+      "accounts": ["priya.s", "svc-backup"],
+      "touched": ["WS-PRIYA-014", "DC-01", "FIN-SRV-02"],
+      "reachable": ["HR-SRV-01"]
+    },
+    "data_at_risk": {
+      "files": 1412,
+      "bytes_out": 2254857830
+    },
+    "weakest_step": 3
+  },
+  "chain": [
+    {
+      "step": 1,
+      "stage": "Initial access",
+      "technique": "T1078 Valid Accounts",
+      "time": "03:12",
+      "minute": 12,
+      "from": "203.0.113.47",
+      "to": "priya.s",
+      "what": "VPN sign-in to priya.s from a new country",
+      "confidence": 82,
+      "inferred": false,
+      "usual": "India, 09:00 to 19:00",
+      "now": "Romania, 03:12",
+      "signals": [
+        { "name": "New country for this user", "weight": 0.34 },
+        { "name": "Outside her usual hours", "weight": 0.28 },
+        { "name": "Two failed tries, then success", "weight": 0.20 }
+      ],
+      "exhibits": [
+        { "id": "L-1873", "raw": "03:09:41 vpn-gw AUTH_FAIL user=priya.s src=203.0.113.47 geo=RO", "late": false, "present": true },
+        { "id": "L-1875", "raw": "03:10:02 vpn-gw AUTH_FAIL user=priya.s src=203.0.113.47 geo=RO", "late": false, "present": true },
+        { "id": "L-1881", "raw": "03:12:17 vpn-gw AUTH_OK user=priya.s src=203.0.113.47 geo=RO", "late": false, "present": true }
+      ]
+    },
+    {
+      "step": 2,
+      "stage": "Privilege escalation",
+      "technique": "T1098.007 Additional Domain Groups",
+      "time": "03:41",
+      "minute": 41,
+      "from": "priya.s",
+      "to": "svc-backup",
+      "what": "svc-backup is made a domain admin",
+      "confidence": 91,
+      "inferred": false,
+      "usual": "No group changes in 30 days",
+      "now": "Added svc-backup to Domain Admins",
+      "signals": [
+        { "name": "Service account gains admin rights", "weight": 0.38 },
+        { "name": "First group change by this user", "weight": 0.36 },
+        { "name": "Lookup command for groups", "weight": 0.25 }
+      ],
+      "exhibits": [
+        { "id": "L-2044", "raw": "03:38:55 WS-PRIYA-014 PROC_START user=priya.s cmd=net-group", "late": false, "present": true },
+        { "id": "L-2051", "raw": "03:41:09 DC-01 GROUP_ADD actor=priya.s member=svc-backup group=Domain-Admins", "late": false, "present": true }
+      ]
+    },
+    {
+      "step": 3,
+      "stage": "Lateral movement",
+      "technique": "T1021 Remote Services",
+      "time": "03:44",
+      "minute": 44,
+      "from": "svc-backup",
+      "to": "DC-01",
+      "what": "The service account signs in by hand on DC-01",
+      "confidence": 77,
+      "inferred": false,
+      "usual": "Scheduled batch jobs only, from BKP-01",
+      "now": "Signed in by hand from WS-PRIYA-014",
+      "signals": [
+        { "name": "Service account used by a person", "weight": 0.33 },
+        { "name": "Wrong machine for this service account", "weight": 0.30 },
+        { "name": "Log arrived late, time less certain", "weight": -0.10 }
+      ],
+      "exhibits": [
+        { "id": "L-2068", "raw": "03:44:30 DC-01 LOGON type=interactive user=svc-backup src=WS-PRIYA-014", "late": true, "present": true },
+        { "id": "L-2070", "raw": "03:45:02 DC-01 TICKET_REQ user=svc-backup service=cifs/FIN-SRV-02", "late": false, "present": true }
+      ]
+    },
+    {
+      "step": 4,
+      "stage": "Collection",
+      "technique": "T1039 Network Shared Drive",
+      "time": "03:52",
+      "minute": 52,
+      "from": "svc-backup",
+      "to": "FIN-SRV-02",
+      "what": "svc-backup reads the payroll share on FIN-SRV-02",
+      "confidence": 88,
+      "inferred": false,
+      "usual": "01:00 UTC, from BKP-01, routine backup",
+      "now": "03:52 UTC, from WS-PRIYA-014, payroll folder",
+      "signals": [
+        { "name": "Large read of files", "weight": 0.30 },
+        { "name": "Wrong machine for this service account", "weight": 0.30 },
+        { "name": "Wrong time for this service account", "weight": 0.27 }
+      ],
+      "exhibits": [
+        { "id": "L-2103", "raw": "03:52:14 FIN-SRV-02 SMB_SESSION user=svc-backup src=WS-PRIYA-014", "late": false, "present": true },
+        { "id": "L-2110", "raw": "03:53:40 FIN-SRV-02 FILE_READ user=svc-backup path=/finance/payroll/2026 files=1412", "late": false, "present": true }
+      ]
+    },
+    {
+      "step": 5,
+      "stage": "Exfiltration",
+      "technique": "T1048.002 Encrypted Non-C2 Protocol",
+      "time": "04:07",
+      "minute": 67,
+      "from": "FIN-SRV-02",
+      "to": "198.51.100.23",
+      "what": "2.1 GB leaves the network to an untrusted external address",
+      "confidence": 85,
+      "inferred": false,
+      "usual": "0 outside connections in 30 days",
+      "now": "2.1 GB to 198.51.100.23 in 12 minutes",
+      "signals": [
+        { "name": "First outside connection", "weight": 0.33 },
+        { "name": "Upload far above normal", "weight": 0.30 }
+      ],
+      "exhibits": [
+        { "id": "L-2161", "raw": "04:07:26 fw-edge CONN_OPEN src=FIN-SRV-02 dst=198.51.100.23:443", "late": false, "present": true },
+        { "id": "L-2190", "raw": "04:19:03 fw-edge CONN_CLOSE src=FIN-SRV-02 dst=198.51.100.23 bytes_out=2254857830", "late": false, "present": true }
+      ]
+    }
+  ],
+  "graph": {
+    "nodes": [
+      { "id": "203.0.113.47", "type": "outside", "state": "hit", "x": 70, "y": 240, "step": 1 },
+      { "id": "priya.s", "type": "user", "state": "hit", "x": 190, "y": 240, "step": 1 },
+      { "id": "WS-PRIYA-014", "type": "machine", "state": "hit", "x": 310, "y": 240, "step": 2 },
+      { "id": "DC-01", "type": "machine", "state": "hit", "x": 430, "y": 160, "step": 3 },
+      { "id": "svc-backup", "type": "user", "state": "hit", "x": 430, "y": 320, "step": 2 },
+      { "id": "FIN-SRV-02", "type": "machine", "state": "hit", "x": 570, "y": 240, "step": 4 },
+      { "id": "198.51.100.23", "type": "outside", "state": "hit", "x": 760, "y": 240, "step": 5 },
+      { "id": "HR-SRV-01", "type": "machine", "state": "reach", "x": 570, "y": 400 },
+      { "id": "MAIL-01", "type": "machine", "state": "normal", "x": 190, "y": 80 },
+      { "id": "arjun.m", "type": "user", "state": "normal", "x": 330, "y": 80 },
+      { "id": "PRINT-02", "type": "machine", "state": "normal", "x": 690, "y": 80 },
+      { "id": "BKP-01", "type": "machine", "state": "normal", "x": 310, "y": 400 },
+      { "id": "neha.k", "type": "user", "state": "normal", "x": 800, "y": 400 },
+      { "id": "WS-NEHA-022", "type": "machine", "state": "normal", "x": 690, "y": 400 }
+    ],
+    "edges": [
+      { "from": "priya.s", "to": "MAIL-01" },
+      { "from": "arjun.m", "to": "MAIL-01" },
+      { "from": "MAIL-01", "to": "DC-01" },
+      { "from": "svc-backup", "to": "BKP-01" },
+      { "from": "svc-backup", "to": "HR-SRV-01" },
+      { "from": "PRINT-02", "to": "DC-01" },
+      { "from": "neha.k", "to": "WS-NEHA-022" },
+      { "from": "neha.k", "to": "HR-SRV-01" }
+    ]
+  },
+  "volume": [
+    { "start": "03:00", "count": 268 },
+    { "start": "03:05", "count": 301 },
+    { "start": "03:10", "count": 279 },
+    { "start": "03:15", "count": 290 },
+    { "start": "03:20", "count": 290 },
+    { "start": "03:25", "count": 284 },
+    { "start": "03:30", "count": 275 },
+    { "start": "03:35", "count": 296 },
+    { "start": "03:40", "count": 288 },
+    { "start": "03:45", "count": 270 },
+    { "start": "03:50", "count": 285 },
+    { "start": "03:55", "count": 282 },
+    { "start": "04:00", "count": 291 },
+    { "start": "04:05", "count": 277 },
+    { "start": "04:10", "count": 289 },
+    { "start": "04:15", "count": 286 },
+    { "start": "04:20", "count": 280 },
+    { "start": "04:25", "count": 293 }
+  ],
+  "hypotheses": [
+    {
+      "name": "Outside attacker with a stolen password",
+      "share": 87,
+      "fits": ["All five steps, in order", "Valid credential use from abnormal geo", "Privilege escalation matching timeline"],
+      "breaks": []
+    },
+    {
+      "name": "Priya working late while travelling",
+      "share": 9,
+      "fits": ["Valid credentials matching password"],
+      "breaks": ["Domain Admins privilege grant", "2.1 GB exfiltration to external IP"]
+    },
+    {
+      "name": "Backup job set up wrongly",
+      "share": 4,
+      "fits": ["svc-backup reading files"],
+      "breaks": ["Interactive logon from workstation", "Payroll folder focus instead of all shares", "Direct outbound connection"]
+    }
+  ],
+  "events": [
+    { "id": "L-1873", "time": "03:09:41", "source": "vpn-gw", "raw": "03:09:41 vpn-gw AUTH_FAIL user=priya.s src=203.0.113.47 geo=RO", "score": 0.46, "reasons": ["New country for this user", "Outside her usual hours"], "step": 1, "late": false, "truth": "found" },
+    { "id": "L-1875", "time": "03:10:02", "source": "vpn-gw", "raw": "03:10:02 vpn-gw AUTH_FAIL user=priya.s src=203.0.113.47 geo=RO", "score": 0.48, "reasons": ["New country for this user", "Outside her usual hours"], "step": 1, "late": false, "truth": "found" },
+    { "id": "L-1881", "time": "03:12:17", "source": "vpn-gw", "raw": "03:12:17 vpn-gw AUTH_OK user=priya.s src=203.0.113.47 geo=RO", "score": 0.82, "reasons": ["New country for this user", "Two failed tries, then success"], "step": 1, "late": false, "truth": "found" },
+    { "id": "L-1902", "time": "03:20:00", "source": "BKP-01", "raw": "03:20:00 BKP-01 JOB_START job=nightly-verify user=svc-backup", "score": 0.08, "reasons": ["Routine backup verification"], "step": null, "late": false, "truth": null },
+    { "id": "L-2044", "time": "03:38:55", "source": "WS-PRIYA-014", "raw": "03:38:55 WS-PRIYA-014 PROC_START user=priya.s cmd=net-group", "score": 0.58, "reasons": ["Lookup command for groups"], "step": 2, "late": false, "truth": "found" },
+    { "id": "L-2051", "time": "03:41:09", "source": "DC-01", "raw": "03:41:09 DC-01 GROUP_ADD actor=priya.s member=svc-backup group=Domain-Admins", "score": 0.91, "reasons": ["Service account gains admin rights", "First group change by this user"], "step": 2, "late": false, "truth": "found" },
+    { "id": "L-2068", "time": "03:44:30", "source": "DC-01", "raw": "03:44:30 DC-01 LOGON type=interactive user=svc-backup src=WS-PRIYA-014", "score": 0.77, "reasons": ["Service account used by a person", "Wrong machine for this service account", "Log arrived late, time less certain"], "step": 3, "late": true, "truth": "found" },
+    { "id": "L-2070", "time": "03:45:02", "source": "DC-01", "raw": "03:45:02 DC-01 TICKET_REQ user=svc-backup service=cifs/FIN-SRV-02", "score": 0.61, "reasons": ["Wrong machine for this service account"], "step": 3, "late": false, "truth": "found" },
+    { "id": "L-2103", "time": "03:52:14", "source": "FIN-SRV-02", "raw": "03:52:14 FIN-SRV-02 SMB_SESSION user=svc-backup src=WS-PRIYA-014", "score": 0.74, "reasons": ["Wrong machine for this service account"], "step": 4, "late": false, "truth": "found" },
+    { "id": "L-2110", "time": "03:53:40", "source": "FIN-SRV-02", "raw": "03:53:40 FIN-SRV-02 FILE_READ user=svc-backup path=/finance/payroll/2026 files=1412", "score": 0.88, "reasons": ["Large read of files", "Wrong time for this service account"], "step": 4, "late": false, "truth": "found" },
+    { "id": "L-2152", "time": "04:05:12", "source": "FIN-SRV-02", "raw": "04:05:12 FIN-SRV-02 DNS_QUERY name=cdn-sync.example", "score": 0.12, "reasons": [], "step": null, "late": false, "truth": "missed" },
+    { "id": "L-2161", "time": "04:07:26", "source": "fw-edge", "raw": "04:07:26 fw-edge CONN_OPEN src=FIN-SRV-02 dst=198.51.100.23:443", "score": 0.79, "reasons": ["First outside connection"], "step": 5, "late": false, "truth": "found" },
+    { "id": "L-2190", "time": "04:19:03", "source": "fw-edge", "raw": "04:19:03 fw-edge CONN_CLOSE src=FIN-SRV-02 dst=198.51.100.23 bytes_out=2254857830", "score": 0.85, "reasons": ["First outside connection", "Upload far above normal"], "step": 5, "late": false, "truth": "found" }
+  ],
+  "truth_score": {
+    "planted": 12,
+    "found": 11,
+    "linked": 11,
+    "recall": 92,
+    "precision": 100,
+    "missed": ["L-2152"],
+    "false_links": []
+  },
+  "report": [
+    { "text": "At 03:12 someone signed in as priya.s from Romania after 2 failed tries.", "cites": ["L-1881"], "step": 1 },
+    { "text": "At 03:41 that session made the svc-backup service account a domain admin.", "cites": ["L-2051"], "step": 2 },
+    { "text": "svc-backup then signed in by hand on DC-01 and requested Kerberos access to the finance server.", "cites": ["L-2068"], "step": 3 },
+    { "text": "It mounted the finance share and read 1,412 payroll files.", "cites": ["L-2110"], "step": 4 },
+    { "text": "Between 04:07 and 04:19, 2.1 GB of data left the network destined for 198.51.100.23.", "cites": ["L-2190"], "step": 5 }
+  ],
+  "limits": [
+    "Whether the payroll files were opened or only copied.",
+    "Whether HR-SRV-01 was touched. The account could reach it and no log says it did.",
+    "How the priya.s credentials were stolen originally."
+  ],
+  "actions": [
+    { "id": "reset-priya.s", "kind": "Contain", "text": "Reset the priya.s password and end her sessions" },
+    { "id": "demote-svc-backup", "kind": "Contain", "text": "Remove svc-backup from Domain Admins" },
+    { "id": "block-198.51.100.23", "kind": "Contain", "text": "Block 198.51.100.23 and isolate FIN-SRV-02" },
+    { "id": "review-HR-SRV-01", "kind": "Check", "text": "Review HR-SRV-01, which the account could reach" }
+  ],
+  "questions": [
+    {
+      "q": "Why is svc-backup flagged?",
+      "a": "It was made a domain admin at 03:41 and then signed in by hand on DC-01. In the 30 days before, it only ran scheduled jobs from BKP-01.",
+      "cites": [{ "id": "L-2051", "step": 2 }, { "id": "L-2068", "step": 3 }]
+    },
+    {
+      "q": "Could this be Priya herself?",
+      "a": "Unlikely. The sign-in fits her password, but she has never changed a group, and nothing she does explains 2.1 GB going to an unknown Romanian destination.",
+      "cites": [{ "id": "L-1881", "step": 1 }, { "id": "L-2051", "step": 2 }, { "id": "L-2190", "step": 5 }]
+    },
+    {
+      "q": "What can't the logs prove?",
+      "a": "Whether the payroll files were opened or only copied, whether HR-SRV-01 was touched, and how the password was stolen. Endpoint logs for WS-PRIYA-014 would settle the first two.",
+      "cites": [{ "id": "L-2110", "step": 4 }]
+    }
+  ]
+}

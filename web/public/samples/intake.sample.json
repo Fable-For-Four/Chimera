@@ -1,0 +1,64 @@
+{
+  "summary": {
+    "events": 5124,
+    "sources": 4,
+    "late": 212,
+    "alerts_fired": 0
+  },
+  "alert_rules": [
+    {
+      "name": "5 failed sign-ins in a minute",
+      "seen": "saw 2 of 5",
+      "ratio": 0.4,
+      "fired": false
+    },
+    {
+      "name": "Outbound transfer over 5 GB",
+      "seen": "saw 2.1 of 5 GB",
+      "ratio": 0.42,
+      "fired": false
+    },
+    {
+      "name": "Sign-in from a blocked country",
+      "seen": "Romania not listed",
+      "ratio": 0.0,
+      "fired": false
+    },
+    {
+      "name": "Admin group changed by an unknown account",
+      "seen": "valid staff account",
+      "ratio": 0.0,
+      "fired": false
+    }
+  ],
+  "volume": [
+    { "start": "03:00", "count": 268 },
+    { "start": "03:05", "count": 301 },
+    { "start": "03:10", "count": 279 },
+    { "start": "03:15", "count": 290 },
+    { "start": "03:20", "count": 290 },
+    { "start": "03:25", "count": 284 },
+    { "start": "03:30", "count": 275 },
+    { "start": "03:35", "count": 296 },
+    { "start": "03:40", "count": 288 },
+    { "start": "03:45", "count": 270 },
+    { "start": "03:50", "count": 285 },
+    { "start": "03:55", "count": 282 },
+    { "start": "04:00", "count": 291 },
+    { "start": "04:05", "count": 277 },
+    { "start": "04:10", "count": 289 },
+    { "start": "04:15", "count": 286 },
+    { "start": "04:20", "count": 280 },
+    { "start": "04:25", "count": 293 }
+  ],
+  "latest": [
+    { "id": "L-0001", "time": "03:00:02", "source": "MAIL-01", "raw": "03:00:02 MAIL-01 HEALTH_OK queue=0" },
+    { "id": "L-0002", "time": "03:00:15", "source": "dc", "raw": "03:00:15 dc LOGON user=svc-backup host=BKP-01 type=batch" },
+    { "id": "L-0003", "time": "03:00:28", "source": "files", "raw": "03:00:28 files FILE_READ user=arjun.m path=/shares/docs/plan.pdf" },
+    { "id": "L-0004", "time": "03:01:05", "source": "vpn-gw", "raw": "03:01:05 vpn-gw AUTH_OK user=neha.k src=10.8.0.41 geo=IN" },
+    { "id": "L-0005", "time": "03:01:33", "source": "fw-edge", "raw": "03:01:33 fw-edge CONN_CLOSE src=MAIL-01 dst=10.0.1.5:25 bytes_out=12040" },
+    { "id": "L-0006", "time": "03:02:11", "source": "MAIL-01", "raw": "03:02:11 MAIL-01 MAIL_RECV user=arjun.m size=48KB" },
+    { "id": "L-0007", "time": "03:02:44", "source": "dc", "raw": "03:02:44 dc TICKET_REQ user=neha.k service=cifs/HR-SRV-01" },
+    { "id": "L-0008", "time": "03:03:19", "source": "files", "raw": "03:03:19 files SMB_SESSION user=neha.k src=WS-NEHA-022" }
+  ]
+}
