@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApp } from "../lib/state";
+import type { ChainStep } from "../lib/types";
 
 export function Overview() {
   const router = useRouter();
@@ -77,8 +78,8 @@ export function Overview() {
               <span className="mono" style={{ fontSize: "24px", fontWeight: 700, color: "var(--text)" }}>
                 {confidence}%
               </span>
-              <span style={{ fontSize: "9px", color: "var(--text-muted)", textTransform: "uppercase" }}>
-                Confidence
+              <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                confidence
               </span>
             </div>
           </div>
@@ -86,7 +87,7 @@ export function Overview() {
           {/* Verdict Text & Facts */}
           <div style={{ flex: 1, minWidth: "280px" }}>
             <div className="kicker" style={{ color: confidence >= 70 ? "var(--lime)" : "var(--amber)" }}>
-              Incident Correlation Verdict
+              Verdict
             </div>
             <h1 style={{ fontSize: "26px", fontWeight: 700, margin: "2px 0 6px", color: "var(--text)" }}>
               {verdict.label}
@@ -108,7 +109,7 @@ export function Overview() {
                 }}
               >
                 <div>
-                  <div className="kicker">Entry Point</div>
+                  <div className="kicker">Entry point</div>
                   <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text)" }}>
                     {verdict.entry_point.account}
                   </div>
@@ -116,7 +117,7 @@ export function Overview() {
                 </div>
 
                 <div>
-                  <div className="kicker">Blast Radius</div>
+                  <div className="kicker">Blast radius</div>
                   <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text)" }}>
                     {verdict.blast_radius?.accounts.length} accounts, {verdict.blast_radius?.touched.length} machines
                   </div>
@@ -126,7 +127,7 @@ export function Overview() {
                 </div>
 
                 <div>
-                  <div className="kicker">Data Exfiltrated</div>
+                  <div className="kicker">Data taken</div>
                   <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text)" }}>
                     {verdict.data_at_risk?.files.toLocaleString()} payroll files
                   </div>
@@ -136,12 +137,12 @@ export function Overview() {
                 </div>
 
                 <div>
-                  <div className="kicker">Weakest Chain Link</div>
+                  <div className="kicker">Weakest link</div>
                   <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--amber)" }}>
-                    Step {verdict.weakest_step || 3}
+                    {verdict.weakest_step ? `Step ${verdict.weakest_step}` : "None"}
                   </div>
                   <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>
-                    Late arriving host authentication
+                    {chain.find((s) => s.step === verdict.weakest_step)?.what}
                   </div>
                 </div>
               </div>
@@ -150,80 +151,13 @@ export function Overview() {
         </div>
       </div>
 
-      {/* Kill Chain Steps Ribbon */}
-      {isFound && (
+      {isFound && chain.length > 0 && (
         <div className="card">
           <div className="card-header">
-            <div>
-              <div className="kicker">Attack Progression</div>
-              <h2 className="card-title">How the attack unfolded ({chain.length} connected steps)</h2>
-            </div>
-            <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-              Select any step to inspect exhibits & network graph
-            </span>
+            <h2 className="card-title">How the attack unfolded ({chain.length} connected steps)</h2>
+            <span className="kicker">Select a step to open its evidence</span>
           </div>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-              gap: "12px",
-            }}
-          >
-            {chain.map((st, idx) => (
-              <button
-                key={st.step}
-                onClick={() => handleStepClick(idx)}
-                style={{
-                  background: "var(--panel-raised)",
-                  border: "1px solid var(--border)",
-                  borderRadius: "6px",
-                  padding: "14px",
-                  textAlign: "left",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "6px",
-                  transition: "border-color 0.15s, background 0.15s",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--lime)")}
-                onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--border)")}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span
-                    style={{
-                      width: "22px",
-                      height: "22px",
-                      borderRadius: "50%",
-                      background: "var(--lime)",
-                      color: "var(--on-accent)",
-                      display: "grid",
-                      placeItems: "center",
-                      fontSize: "11px",
-                      fontWeight: 700,
-                      fontFamily: "var(--font-mono)",
-                    }}
-                  >
-                    {st.step}
-                  </span>
-                  <span className="mono" style={{ fontSize: "11px", color: "var(--text-muted)" }}>
-                    {st.time} UTC
-                  </span>
-                </div>
-                <div className="kicker" style={{ color: "var(--lime)" }}>
-                  {st.stage}
-                </div>
-                <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--text)", lineHeight: "1.4" }}>
-                  {st.what}
-                </div>
-                <div style={{ marginTop: "auto", display: "flex", justifyContent: "space-between", fontSize: "11px" }}>
-                  <span style={{ color: "var(--text-dim)" }}>{st.technique.split(" ")[0]}</span>
-                  <span className="mono" style={{ color: st.confidence >= 80 ? "var(--lime)" : "var(--amber)" }}>
-                    {st.confidence}% sure
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
+          <Waterfall chain={chain} onSelect={handleStepClick} />
         </div>
       )}
 
@@ -233,8 +167,8 @@ export function Overview() {
         <div className="card">
           <div className="card-header">
             <div>
-              <div className="kicker">Hypothesis Evaluation</div>
-              <h3 className="card-title">Innocent Explanations</h3>
+              <div className="kicker">Tested against the chain</div>
+              <h3 className="card-title">Other explanations</h3>
             </div>
           </div>
 
@@ -302,7 +236,7 @@ export function Overview() {
             ))}
           </ul>
           <div style={{ marginTop: "14px", fontSize: "11px", color: "var(--text-dim)" }}>
-            Engine runs locally with zero external API calls or uncalibrated LLM hallucinations.
+            Every stage runs locally with fixed rules. The same logs give the same answer.
           </div>
         </div>
 
@@ -310,8 +244,8 @@ export function Overview() {
         <div className="card">
           <div className="card-header">
             <div>
-              <div className="kicker">Human-In-The-Loop Containment</div>
-              <h3 className="card-title">Recommended Actions</h3>
+              <div className="kicker">Nothing runs until an analyst approves</div>
+              <h3 className="card-title">Recommended actions</h3>
             </div>
             <span className="mono" style={{ fontSize: "11px", color: "var(--text-dim)" }}>
               {Object.keys(approvals).length} of {actions.length} approved
@@ -368,8 +302,8 @@ export function Overview() {
       <div className="card">
         <div className="card-header">
           <div>
-            <div className="kicker">Evidence-Grounded Inquiries</div>
-            <h3 className="card-title">Ask the Case (Every Claim Cites Logs)</h3>
+            <div className="kicker">Every answer cites log lines</div>
+            <h3 className="card-title">Ask the case</h3>
           </div>
         </div>
 
@@ -423,6 +357,68 @@ export function Overview() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+const TICK_MINUTES = 15;
+
+function Waterfall({ chain, onSelect }: { chain: ChainStep[]; onSelect: (idx: number) => void }) {
+  const lastMinute = Math.max(...chain.map((s) => s.minute));
+  const axisEnd = Math.max(TICK_MINUTES, Math.ceil((lastMinute + 1) / TICK_MINUTES) * TICK_MINUTES);
+  const ticks = Array.from({ length: axisEnd / TICK_MINUTES + 1 }, (_, i) => i * TICK_MINUTES);
+  const pct = (minute: number) => `${(minute / axisEnd) * 100}%`;
+
+  return (
+    <div className="wf" role="list">
+      <div className="wf-row wf-head" aria-hidden="true">
+        <span />
+        <span>Step</span>
+        <span className="wf-axis">
+          {ticks.map((t) => (
+            <span key={t} className="wf-tick" style={{ left: pct(t) }}>
+              +{t}m
+            </span>
+          ))}
+        </span>
+        <span className="wf-num">Time</span>
+        <span className="wf-num">Sure</span>
+      </div>
+
+      {chain.map((st, idx) => {
+        const next = chain[idx + 1];
+        const gap = next ? next.minute - st.minute : 0;
+        const strong = st.confidence >= 80;
+
+        return (
+          <button key={st.step} className="wf-row wf-step" role="listitem" onClick={() => onSelect(idx)}>
+            <span className="wf-index">{st.step}</span>
+            <span className="wf-label">
+              <span className="wf-stage">
+                {st.stage}
+                <span className="wf-technique">{st.technique.split(" ")[0]}</span>
+              </span>
+              <span className="wf-what">{st.what}</span>
+            </span>
+            <span className="wf-track">
+              {ticks.map((t) => (
+                <span key={t} className="wf-grid" style={{ left: pct(t) }} />
+              ))}
+              <span
+                className={`wf-bar${strong ? "" : " wf-bar-weak"}${st.inferred ? " wf-bar-inferred" : ""}`}
+                style={{ left: pct(st.minute), width: gap > 0 ? pct(gap) : undefined }}
+              />
+              {gap > 0 && (
+                <span className="wf-gap" style={{ left: `calc(${pct(st.minute + gap)} + 6px)` }}>
+                  {gap}m
+                </span>
+              )}
+            </span>
+            <span className="wf-num">{st.time}</span>
+            <span className={`wf-num ${strong ? "wf-sure" : "wf-unsure"}`}>{st.confidence}%</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
