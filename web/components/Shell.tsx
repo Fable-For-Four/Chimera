@@ -17,7 +17,8 @@ const NAV_ITEMS = [
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, caseData, isRunning, runInvestigation, resetCase, error } = useApp();
+  const { user, intake, caseData, isRunning, runInvestigation, resetCase, error } = useApp();
+  const eventCount = intake?.summary.events.toLocaleString() ?? "";
 
   const handleRerun = () => {
     runInvestigation();
@@ -115,12 +116,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 </span>
                 {item.href === "/logs" && (
                   <span className="mono" style={{ fontSize: "10px", color: "var(--text-dim)" }}>
-                    5,124
+                    {eventCount}
                   </span>
                 )}
                 {item.href === "/graph" && isCaseReady && (
                   <span className="mono" style={{ fontSize: "10px", color: "var(--lime)" }}>
-                    5 steps
+                    {caseData?.chain.length} steps
                   </span>
                 )}
               </Link>
@@ -151,7 +152,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
               />
               <span style={{ fontWeight: 600, color: "var(--text)" }}>Simulated Data</span>
             </div>
-            5,124 events from 4 log sources. Plain deterministic engine rules.
+            {intake
+              ? `${eventCount} events from ${intake.summary.sources} log sources. Plain deterministic engine rules.`
+              : "Plain deterministic engine rules."}
           </div>
         </div>
       </aside>

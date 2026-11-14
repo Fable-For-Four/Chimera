@@ -5,10 +5,11 @@ import { PipelineStage } from "../lib/types";
 
 interface RunningStageProps {
   stages: PipelineStage[];
+  events: number;
   onComplete: () => void;
 }
 
-export function RunningStage({ stages, onComplete }: RunningStageProps) {
+export function RunningStage({ stages, events, onComplete }: RunningStageProps) {
   const [activeIdx, setActiveIdx] = useState<number>(0);
 
   useEffect(() => {
@@ -39,10 +40,10 @@ export function RunningStage({ stages, onComplete }: RunningStageProps) {
         <div style={{ marginBottom: "16px" }}>
           <div className="kicker">How the case was worked</div>
           <h2 style={{ fontSize: "24px", fontWeight: 500, color: "var(--text)", marginTop: "4px" }}>
-            Reconstructing Attack Across 5,124 Events
+            Reconstructing Attack Across {events.toLocaleString()} Events
           </h2>
           <p style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" }}>
-            Executing 6 deterministic pipeline stages: temporal alignment, baselines, anomaly scoring, entity graph linking, hypothesis competition, and evidentiary report.
+            Executing {stages.length} deterministic pipeline stages: temporal alignment, baselines, anomaly scoring, entity graph linking, hypothesis competition, and evidentiary report.
           </p>
         </div>
 

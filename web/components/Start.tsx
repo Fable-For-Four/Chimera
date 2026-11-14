@@ -16,6 +16,7 @@ export function Start() {
   }
 
   const { summary, alert_rules, volume, latest } = intake;
+  const maxCount = Math.max(1, ...volume.map((pt) => pt.count));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
@@ -52,7 +53,7 @@ export function Start() {
               <div className="kicker">Nightly Telemetry Flow</div>
               <h2 className="card-title">Event Volume (03:00 to 04:30 UTC)</h2>
             </div>
-            <span className="pill pill-lime">All 4 Sources Healthy</span>
+            <span className="pill pill-lime">All {summary.sources} Sources Healthy</span>
           </div>
 
           {/* SVG Volume Bars */}
@@ -60,7 +61,7 @@ export function Start() {
             <svg viewBox="0 0 760 110" className="svg-canvas" role="img" aria-label="Event volume per 5 minutes">
               {volume.map((pt, idx) => {
                 const barWidth = 700 / volume.length - 4;
-                const barHeight = (pt.count / 340) * 80;
+                const barHeight = (pt.count / maxCount) * 80;
                 const x = 30 + idx * (700 / volume.length);
                 const y = 85 - barHeight;
 
@@ -185,7 +186,7 @@ export function Start() {
             <h2 className="card-title">Latest Logs in Order of Arrival</h2>
           </div>
           <Link href="/logs" className="btn btn-small">
-            Explore All 5,124 Events →
+            Explore All {summary.events.toLocaleString()} Events →
           </Link>
         </div>
 

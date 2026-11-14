@@ -94,6 +94,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const runInvestigation = useCallback(async () => {
     setIsRunning(true);
     setError(null);
+    setCaseData(null);
     try {
       const result = await postRunInvestigation();
       // Do NOT clear isRunning here: the RunningStage animation calls
@@ -104,8 +105,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       setApprovals({});
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to run investigation");
-      // Only clear on error — animation never shows on failure
       setIsRunning(false);
+      const previous = await getCase();
+      if (previous) setCaseData(previous);
     }
   }, []);
 
