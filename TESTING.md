@@ -25,6 +25,29 @@ These are the end-to-end cases. Each one runs the whole engine on a dataset and 
 | 6 | Stress test: 40% of logs deleted at random | 2,050 events deleted, the chain is still found at 74% | Pass |
 | 7 | The same chain against three innocent explanations | The attack explains all 5 steps (81%); the others explain one step each (10% and 9%) | Pass |
 
+## Test cases on the website
+
+On the Start screen, pick a test case and press **Run investigation**. Each one is a different scripted night (seed 7) inside the same 5,000 lines of normal activity.
+
+| Test case | What is in the logs | Expected result |
+|---|---|---|
+| Payroll data theft | Stolen VPN password, admin rights, server access, payroll files read, 2.1 GB sent out | Likely attack, 81%, 5 steps |
+| Break-in stopped early | Sign-in, admin rights and server access, then nothing leaves | Likely attack, 71%, 3 steps |
+| Theft with a missing log | The full theft, but the domain controller log is silent during step 3 | Probable attack, 68%, step 3 inferred at 41% |
+| Mail server flood | 1,800 connections from one address in three minutes | No chain found |
+| Failed password spray | One address tries a password on 18 sign-ins across 9 accounts, none succeed | No chain found |
+| Employee working late | priya.s signs in from home in India at 03:05 and opens 14 of her team's files | No chain found |
+| Payroll theft, fresh background | The theft inside a new random night of normal activity | Likely attack, 81%, different log lines each time |
+
+The same cases run in `tests/test_case_api.py` (`test_real_engine_gives_each_test_case_its_verdict`). From the terminal:
+
+```
+python -m generator --scenario gap --out out/gap/data
+python -m engine.run out/gap/data out/gap/out
+```
+
+The scenario names are `chain`, `stopped`, `gap`, `dos`, `spray` and `late_work`.
+
 Try cases 1 and 4 yourself:
 
 ```

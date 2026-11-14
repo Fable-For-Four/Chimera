@@ -13,6 +13,15 @@ from generator import noise, scenario
 
 LATE_COUNT = 211  # plus the planted step 3 LOGON makes 212 late events
 
+SCENARIOS = {
+    "chain": scenario.attack_events,
+    "dos": scenario.dos_events,
+    "stopped": scenario.stopped_events,
+    "gap": scenario.gap_events,
+    "spray": scenario.spray_events,
+    "late_work": scenario.late_work_events,
+}
+
 
 def iso(dt):
     return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -31,7 +40,7 @@ def build(seed, scenario_name="chain"):
     normal = noise.normal_events(rng, company)
     for e in rng.sample(normal, LATE_COUNT):
         e["received_at"] = e["ts"] + timedelta(seconds=rng.randint(180, 720))
-    attack = scenario.dos_events() if scenario_name == "dos" else scenario.attack_events()
+    attack = SCENARIOS[scenario_name]()
     attack_ids = {id(e) for e in attack}
 
     # Stable sort keeps generation order for ties, so the same seed gives the same file.
@@ -69,11 +78,11 @@ def build(seed, scenario_name="chain"):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--seed", type=int, default=7)
-    ap.add_argument("--scenario", choices=["chain", "dos"], default="chain")
+    ap.add_argument("--scenario", choices=list(SCENARIOS), default="chain")
     ap.add_argument("--out")
     args = ap.parse_args()
     events, files = build(args.seed, args.scenario)
-    out = Path(args.out or ("data" if args.scenario == "chain" else "data_dos"))
+    out = Path(args.out or ("data" if args.scenario == "chain" else f"data_{args.scenario}"))
     out.mkdir(exist_ok=True)
     (out / "events.jsonl").write_text(
         "".join(json.dumps(e) + "\n" for e in events), encoding="utf-8", newline="\n"
