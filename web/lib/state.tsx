@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { CaseData, IntakeData, User, Approval } from "./types";
+import { CaseData, IntakeData, User, Approval, Night } from "./types";
 import {
   getMe,
   getIntake,
@@ -23,6 +23,8 @@ interface AppContextType {
   error: string | null;
   setSelectedStep: (step: number) => void;
   setStressLevel: (level: number) => Promise<void>;
+  night: Night;
+  setNight: (night: Night) => void;
   runInvestigation: () => Promise<void>;
   finishInvestigation: () => void;
   approveAction: (actionId: string) => Promise<void>;
@@ -41,6 +43,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [approvals, setApprovals] = useState<Record<string, Approval>>({});
   const [error, setError] = useState<string | null>(null);
+  const [night, setNight] = useState<Night>("attack");
 
   // Initial data bootstrap
   useEffect(() => {
@@ -96,20 +99,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setError(null);
     setCaseData(null);
     try {
-      const result = await postRunInvestigation();
-      // Do NOT clear isRunning here: the RunningStage animation calls
-      // finishInvestigation() when it completes (~3.5s).
+      const result = await postRunInvestigation(night);
       setCaseData(result);
       setSelectedStep(0);
       setStressLevelState(0);
       setApprovals({});
+      setIntake(await getIntake());
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to run investigation");
       setIsRunning(false);
       const previous = await getCase();
       if (previous) setCaseData(previous);
     }
-  }, []);
+  }, [night]);
 
   const finishInvestigation = useCallback(() => {
     setIsRunning(false);
@@ -154,6 +156,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         error,
         setSelectedStep,
         setStressLevel,
+        night,
+        setNight,
         runInvestigation,
         finishInvestigation,
         approveAction,

@@ -2,6 +2,7 @@ import logging
 import os
 import sqlite3
 from contextlib import asynccontextmanager
+from typing import Literal
 
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, Response
 from fastapi.exceptions import RequestValidationError
@@ -94,6 +95,10 @@ class LoginBody(BaseModel):
 
 class VerifyBody(BaseModel):
     token: str = Field(max_length=200)
+
+
+class RunBody(BaseModel):
+    night: Literal["attack", "quiet", "random"] = "attack"
 
 
 def app_url():
@@ -204,13 +209,14 @@ def get_stress(level: str, user=Depends(require("case:read"))):
 
 
 @app.post("/api/case/run")
-def run_case(user=Depends(require("case:run")), db=Depends(get_db)):
+def run_case(body: RunBody | None = None, user=Depends(require("case:run")), db=Depends(get_db)):
     def clear_approvals():
         db.execute("DELETE FROM approvals")
         db.commit()
 
+    night = body.night if body else "attack"
     try:
-        data = case_files.run_investigation(on_success=clear_approvals)
+        data = case_files.run_investigation(on_success=clear_approvals, night=night)
     except Exception as exc:
         logger.error("The investigation failed: %s", exc)
         raise HTTPException(status_code=500, detail="The investigation failed") from None

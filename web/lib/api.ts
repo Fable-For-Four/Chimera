@@ -1,4 +1,4 @@
-import { CaseData, IntakeData, User, Approval } from "./types";
+import { CaseData, IntakeData, User, Approval, Night } from "./types";
 
 const IS_BROWSER = typeof window !== "undefined";
 
@@ -78,8 +78,8 @@ export async function getStressCase(level: number): Promise<CaseData> {
   return request<CaseData>(`/api/case/stress/${level}`);
 }
 
-export async function postRunInvestigation(): Promise<CaseData> {
-  return request<CaseData>("/api/case/run", { method: "POST" });
+export async function postRunInvestigation(night: Night): Promise<CaseData> {
+  return request<CaseData>("/api/case/run", { method: "POST", body: JSON.stringify({ night }) });
 }
 
 export async function postApproveAction(actionId: string): Promise<Approval> {
