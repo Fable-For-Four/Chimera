@@ -370,7 +370,7 @@ function Waterfall({ chain, onSelect }: { chain: ChainStep[]; onSelect: (idx: nu
   const pct = (minute: number) => `${(minute / axisEnd) * 100}%`;
 
   return (
-    <div className="wf" role="list">
+    <div className="wf">
       <div className="wf-row wf-head" aria-hidden="true">
         <span />
         <span>Step</span>
@@ -391,7 +391,7 @@ function Waterfall({ chain, onSelect }: { chain: ChainStep[]; onSelect: (idx: nu
         const strong = st.confidence >= 80;
 
         return (
-          <button key={st.step} className="wf-row wf-step" role="listitem" onClick={() => onSelect(idx)}>
+          <button key={st.step} className="wf-row wf-step" onClick={() => onSelect(idx)}>
             <span className="wf-index">{st.step}</span>
             <span className="wf-label">
               <span className="wf-stage">

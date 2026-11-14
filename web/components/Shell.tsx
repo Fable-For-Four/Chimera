@@ -86,6 +86,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
                 aria-current={active ? "page" : undefined}
                 aria-disabled={disabled || undefined}
                 tabIndex={disabled ? -1 : undefined}
+                onClick={disabled ? (e) => e.preventDefault() : undefined}
               >
                 <span className="nav-link-main">
                   <NavIcon name={item.icon} />
