@@ -503,6 +503,32 @@ a {
   text-transform: capitalize;
 }
 
+.page-head {
+  margin-bottom: 20px;
+}
+
+.page-head h1 {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.page-head p {
+  margin-top: 2px;
+  font-size: 13.5px;
+  color: var(--text-muted);
+}
+
+.report-h {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
 .shell-error {
   margin: 0;
   padding: 10px 14px;

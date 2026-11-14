@@ -68,22 +68,24 @@ export function IncidentReport() {
     <div style={{ maxWidth: "860px", margin: "0 auto", width: "100%" }}>
       <div className="card" style={{ padding: "32px", gap: "24px", background: "var(--panel)" }}>
         <header style={{ borderBottom: "1px solid var(--border)", paddingBottom: "20px" }}>
-          <div className="kicker" style={{ color: "var(--lime)" }}>Formal Incident Summary</div>
-          <h1 style={{ fontSize: "28px", fontWeight: 700, margin: "6px 0 10px", color: "var(--text)" }}>
+          <div className="kicker" style={{ color: "var(--lime)" }}>Incident report</div>
+          <h1 style={{ fontSize: "22px", fontWeight: 600, lineHeight: 1.35, margin: "6px 0 10px", color: "var(--text)" }}>
             {verdict.headline || verdict.label}
           </h1>
           <div
             className="mono"
             style={{ display: "flex", gap: "16px", fontSize: "11px", color: "var(--text-dim)", flexWrap: "wrap" }}
           >
-            <span style={{ color: "var(--lime)" }}>{verdict.confidence}% Confidence</span>
-            <span>Simulated Dataset ({summary.events.toLocaleString()} Events)</span>
-            <span>Stress Level {level}% · {deleted.toLocaleString()} Events Deleted</span>
+            <span style={{ color: "var(--lime)" }}>{verdict.confidence}% confidence</span>
+            <span>{summary.events.toLocaleString()} simulated events</span>
+            <span>
+              Stress level {level}%, {deleted.toLocaleString()} events deleted
+            </span>
           </div>
         </header>
 
         <section>
-          <h2 className="kicker" style={{ marginBottom: "10px" }}>01 / Narrative of Observed Facts</h2>
+          <h2 className="report-h">What happened</h2>
           <div style={{ fontSize: "14px", lineHeight: 1.7, color: "var(--text)" }}>
             {report.map((item) => (
               <span key={`${item.step}-${item.cites.join("-")}`} style={{ marginRight: "6px" }}>
@@ -104,7 +106,7 @@ export function IncidentReport() {
                     marginLeft: "4px",
                   }}
                 >
-                  {item.cites.join(", ")} ↗
+                  {item.cites.join(", ")}
                 </button>
               </span>
             ))}
@@ -112,15 +114,15 @@ export function IncidentReport() {
         </section>
 
         <section>
-          <h2 className="kicker" style={{ marginBottom: "10px" }}>02 / Reconstructed Chronology</h2>
+          <h2 className="report-h">Timeline</h2>
           <div className="table-container">
             <table>
               <thead>
                 <tr>
                   <th style={{ width: "90px" }}>Time (UTC)</th>
-                  <th>Observed Activity</th>
-                  <th style={{ width: "150px" }}>MITRE Technique</th>
-                  <th style={{ width: "80px" }}>Certainty</th>
+                  <th>Activity</th>
+                  <th style={{ width: "150px" }}>ATT&amp;CK technique</th>
+                  <th style={{ width: "80px" }}>Sure</th>
                 </tr>
               </thead>
               <tbody>
@@ -140,16 +142,14 @@ export function IncidentReport() {
         </section>
 
         <section>
-          <h2 className="kicker" style={{ marginBottom: "10px", color: "var(--amber)" }}>
-            03 / Forensic Blind Spots & Known Limitations
-          </h2>
+          <h2 className="report-h">What this report cannot see</h2>
           <ul style={{ paddingLeft: "20px", fontSize: "13px", color: "var(--text-muted)", lineHeight: 1.7 }}>
             {limits.map((limit) => <li key={limit}>{limit}</li>)}
           </ul>
         </section>
 
         <section>
-          <h2 className="kicker" style={{ marginBottom: "10px" }}>04 / Incident Response Actions</h2>
+          <h2 className="report-h">Response actions</h2>
           <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
             {actions.map((action) => {
               const approval = approvals[action.id];
@@ -178,7 +178,7 @@ export function IncidentReport() {
                     </span>
                     {approval && (
                       <span style={{ color: "var(--text-dim)", fontSize: "10px" }}>
-                        {approval.approved_by} · {new Date(approval.approved_at).toLocaleString()}
+                        {approval.approved_by}, {new Date(approval.approved_at).toLocaleString()}
                       </span>
                     )}
                   </span>
