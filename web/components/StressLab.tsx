@@ -1,15 +1,43 @@
 "use client";
 
 import React from "react";
+import { getStressCase } from "../lib/api";
 import { useApp } from "../lib/state";
+
+const LEVELS = [0, 5, 10, 15, 20, 25, 30, 35, 40];
+const LINE_COLORS = ["var(--lime)", "var(--amber)", "var(--text-dim)"];
+const LINE_WIDTHS = ["2.5", "2", "1.5"];
+
+interface LevelShares {
+  level: number;
+  shares: number[];
+}
 
 export function StressLab() {
   const { caseData, stressLevel, setStressLevel } = useApp();
   const [localLevel, setLocalLevel] = React.useState<number>(stressLevel);
+  const [series, setSeries] = React.useState<LevelShares[]>([]);
 
   React.useEffect(() => {
     setLocalLevel(stressLevel);
   }, [stressLevel]);
+
+  React.useEffect(() => {
+    let mounted = true;
+    Promise.allSettled(LEVELS.map((level) => getStressCase(level))).then((results) => {
+      if (!mounted) return;
+      const points: LevelShares[] = [];
+      results.forEach((result, i) => {
+        if (result.status === "fulfilled") {
+          points.push({ level: LEVELS[i], shares: result.value.hypotheses.map((h) => h.share) });
+        }
+      });
+      setSeries(points);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   if (!caseData || !caseData.truth_score) {
     return (
@@ -19,9 +47,9 @@ export function StressLab() {
     );
   }
 
-  const { chain, truth_score } = caseData;
-  const deletedCount = Math.round(5124 * (localLevel / 100));
-  const activeConfidence = Math.max(20, Math.round(87 - 1.15 * localLevel));
+  const { chain, truth_score, hypotheses, verdict, summary } = caseData;
+  const deletedCount = caseData.deleted;
+  const shownLevel = caseData.level;
 
   // Chart coordinates
   const chartWidth = 560;
@@ -43,7 +71,9 @@ export function StressLab() {
             <div className="kicker">Robustness & Log Degradation Testing</div>
             <h2 className="card-title">Simulate Missing & Delayed Telemetry</h2>
           </div>
-          <span className="pill pill-amber">Level {localLevel}% · {deletedCount} Logs Dropped</span>
+          <span className="pill pill-amber">
+            Level {shownLevel}% · {deletedCount.toLocaleString()} Logs Dropped
+          </span>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "20px", flexWrap: "wrap" }}>
@@ -90,12 +120,14 @@ export function StressLab() {
         </div>
 
         <p style={{ fontSize: "13px", color: "var(--text-muted)", lineHeight: "1.6" }}>
-          {localLevel === 0
-            ? "Complete telemetry on file (5,124 events). Move the slider to delete a random percentage of logs and shuffle arrival timestamps to test engine resilience."
+          {shownLevel === 0
+            ? `Complete telemetry on file (${summary.events.toLocaleString()} events). Move the slider to delete a random percentage of logs and shuffle arrival timestamps to test engine resilience.`
             : `${deletedCount.toLocaleString()} events purged and 20% of remaining logs re-ordered. ${
-                activeConfidence >= 50
-                  ? "The 5-step attack chain is still reconstructed, but individual step certainty decreases."
-                  : "Chain confidence drops below the 50% threshold — escalation protocol triggers human analyst review."
+                !verdict.found
+                  ? "No attack chain could be rebuilt from what is left."
+                  : verdict.confidence >= 50
+                  ? `The ${chain.length}-step attack chain is still reconstructed at ${verdict.confidence}% confidence.`
+                  : `Chain confidence drops to ${verdict.confidence}%, below the 50% threshold. A human analyst should review it.`
               }`}
         </p>
       </div>
@@ -157,44 +189,30 @@ export function StressLab() {
                 50% Threshold
               </text>
 
-              {/* Outside Attacker Curve (Decreasing) */}
-              <line
-                x1={getX(0)}
-                y1={getY(87)}
-                x2={getX(40)}
-                y2={getY(41)}
-                stroke="var(--lime)"
-                strokeWidth="2.5"
-              />
-              <circle cx={getX(localLevel)} cy={getY(87 - 1.15 * localLevel)} r="4" fill="var(--lime)" />
+              {hypotheses.map((hyp, idx) => (
+                <g key={hyp.name}>
+                  <polyline
+                    points={series
+                      .filter((p) => p.shares[idx] !== undefined)
+                      .map((p) => `${getX(p.level)},${getY(p.shares[idx])}`)
+                      .join(" ")}
+                    fill="none"
+                    stroke={LINE_COLORS[idx % LINE_COLORS.length]}
+                    strokeWidth={LINE_WIDTHS[idx % LINE_WIDTHS.length]}
+                  />
+                  <circle
+                    cx={getX(shownLevel)}
+                    cy={getY(hyp.share)}
+                    r="4"
+                    fill={LINE_COLORS[idx % LINE_COLORS.length]}
+                  />
+                </g>
+              ))}
 
-              {/* Travelling Employee Curve (Increasing) */}
               <line
-                x1={getX(0)}
-                y1={getY(9)}
-                x2={getX(40)}
-                y2={getY(37)}
-                stroke="var(--amber)"
-                strokeWidth="2"
-              />
-              <circle cx={getX(localLevel)} cy={getY(9 + 0.7 * localLevel)} r="4" fill="var(--amber)" />
-
-              {/* Misconfigured Backup Curve (Increasing) */}
-              <line
-                x1={getX(0)}
-                y1={getY(4)}
-                x2={getX(40)}
-                y2={getY(22)}
-                stroke="var(--text-dim)"
-                strokeWidth="1.5"
-              />
-              <circle cx={getX(localLevel)} cy={getY(4 + 0.45 * localLevel)} r="4" fill="var(--text-dim)" />
-
-              {/* Current Cursor Line */}
-              <line
-                x1={getX(localLevel)}
+                x1={getX(shownLevel)}
                 y1="15"
-                x2={getX(localLevel)}
+                x2={getX(shownLevel)}
                 y2={chartHeight - 30}
                 stroke="rgba(255, 255, 255, 0.4)"
                 strokeWidth="1"
@@ -212,18 +230,14 @@ export function StressLab() {
               flexWrap: "wrap",
             }}
           >
-            <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <span style={{ width: "12px", height: "3px", background: "var(--lime)" }} />
-              Outside Attacker
-            </span>
-            <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <span style={{ width: "12px", height: "3px", background: "var(--amber)" }} />
-              Priya Travelling
-            </span>
-            <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-              <span style={{ width: "12px", height: "3px", background: "var(--text-dim)" }} />
-              Backup Misconfigured
-            </span>
+            {hypotheses.map((hyp, idx) => (
+              <span key={hyp.name} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <span
+                  style={{ width: "12px", height: "3px", background: LINE_COLORS[idx % LINE_COLORS.length] }}
+                />
+                {hyp.name} ({hyp.share}%)
+              </span>
+            ))}
           </div>
         </div>
 
@@ -303,13 +317,16 @@ export function StressLab() {
                 <div className="metric-val" style={{ color: "var(--lime)" }}>
                   {truth_score.precision}%
                 </div>
-                <div className="metric-label">Precision (Zero false-positive edges)</div>
+                <div className="metric-label">
+                  Precision ({truth_score.false_links.length} false links)
+                </div>
               </div>
             </div>
 
             <div style={{ fontSize: "11px", color: "var(--text-dim)", lineHeight: "1.5" }}>
-              Missed: L-2152 (routine DNS query preceding transfer). Clean separation maintained against 25 lone
-              oddities.
+              {truth_score.missed.length > 0
+                ? `Missed: ${truth_score.missed.join(", ")}.`
+                : "No planted event was missed."}
             </div>
           </div>
         </div>
