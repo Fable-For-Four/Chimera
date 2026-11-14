@@ -5,21 +5,21 @@ import os
 import random
 import sys
 import time
-from collections import Counter
 from pathlib import Path
 
 from engine.challenge import challenge
+from engine.intake import build_intake
 from engine.link import CANDIDATE, link
 from engine.profile import Profile
 from engine.report import write_report
 from engine.score import score_events
-from engine.sort import parse, sort_events
+from engine.sort import sort_events
+from engine.stress import stress_runs
 from engine.truth import load_planted, score_truth
 from engine.verdict import verdict
 
 NORMAL_SAMPLE = 40
 SAMPLE_SEED = 7
-STRESS_LEVELS = [0, 5, 10, 15, 20, 25, 30, 35, 40]
 DOES = {
     "Sort": "Put every event in true time order",
     "Profile": "Compare activity with 30 days of history",
@@ -39,21 +39,6 @@ def load_data(data_dir):
         with open(data_dir / f"{name}.json", encoding="utf-8") as f:
             files[name] = json.load(f)
     return events, files, load_planted(data_dir)
-
-
-def summary_and_volume(ordered):
-    # ponytail: stand-in until B3 merges, then take summary and volume from engine/intake.py.
-    buckets = Counter()
-    for e in ordered:
-        t = parse(e["ts"])
-        buckets[f"{t.hour:02}:{t.minute - t.minute % 5:02}"] += 1
-    summary = {
-        "events": len(ordered),
-        "sources": len({e["source"] for e in ordered}),
-        "late": sum(e["late"] for e in ordered),
-        "alerts_fired": 0,
-    }
-    return summary, [{"start": k, "count": buckets[k]} for k in sorted(buckets)]
 
 
 def case_events(arrival, scored, chain_events, planted, steps):
@@ -135,16 +120,16 @@ def investigate(events, files, planted, level=0, deleted=0):
     )
 
     truth_score, _ = score_truth(planted, steps, scored)
-    summary, volume = summary_and_volume(ordered)
+    intake = build_intake(events, files["history"])
     return {
         "level": level,
         "deleted": deleted,
-        "summary": summary,
+        "summary": intake["summary"],
         "stages": stages,
         "verdict": judged["verdict"],
         "chain": steps,
         "graph": judged["graph"],
-        "volume": volume,
+        "volume": intake["volume"],
         "hypotheses": hypotheses,
         "events": case_list,
         "truth_score": truth_score,
@@ -174,12 +159,11 @@ def print_chain(case):
 def run(data_dir="data", out_dir="out"):
     out_dir = Path(out_dir)
     events, files, planted = load_data(data_dir)
+    write_json(out_dir / "intake.json", build_intake(events, files["history"]))
     case = investigate(events, files, planted)
-    # ponytail: only level 0 until A6 merges; drop stale levels so samples are never served as real.
-    for level in STRESS_LEVELS[1:]:
-        (out_dir / "stress" / f"{level:02d}.json").unlink(missing_ok=True)
-    write_json(out_dir / "stress" / "00.json", case)
-    write_json(out_dir / "case.json", case)
+    for stressed in stress_runs(events, files, planted, case, investigate):
+        write_json(out_dir / "stress" / f"{stressed['level']:02d}.json", stressed)
+    write_json(out_dir / "case.json", case)  # last, so a new case.json means every file is ready
     return case
 
 
