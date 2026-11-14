@@ -14,7 +14,6 @@ async function responseDetail(response: Response, fallback: string) {
 const fieldStyle = {
   width: "100%",
   border: "1px solid var(--border-light)",
-  borderRadius: "var(--radius-control)",
   background: "var(--bg)",
   padding: "9px 11px",
 } as const;

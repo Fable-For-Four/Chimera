@@ -75,7 +75,6 @@ export function Start() {
                       y={y}
                       width={barWidth}
                       height={barHeight}
-                      rx="2"
                       fill="var(--border-light)"
                     />
                     {idx % 3 === 0 && (
@@ -103,7 +102,6 @@ export function Start() {
               alignItems: "center",
               background: "var(--panel-raised)",
               padding: "16px 20px",
-              borderRadius: "6px",
               border: "1px solid var(--border)",
               marginTop: "auto",
               flexWrap: "wrap",
@@ -175,7 +173,6 @@ export function Start() {
                     style={{
                       height: "6px",
                       background: "var(--panel-raised)",
-                      borderRadius: "3px",
                       overflow: "hidden",
                       border: "1px solid var(--border)",
                     }}
@@ -185,7 +182,6 @@ export function Start() {
                         width: `${pct}%`,
                         height: "100%",
                         background: rule.fired ? "var(--red)" : pct > 0 ? "var(--amber)" : "var(--text-dim)",
-                        borderRadius: "3px",
                         transition: "width 0.3s ease",
                       }}
                     />

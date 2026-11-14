@@ -136,7 +136,6 @@ export function Overview() {
                   style={{
                     height: "4px",
                     background: "var(--panel-raised)",
-                    borderRadius: "2px",
                     overflow: "hidden",
                   }}
                 >
@@ -271,7 +270,6 @@ export function Overview() {
           <div
             style={{
               background: "var(--panel-raised)",
-              borderRadius: "6px",
               padding: "16px 20px",
               border: "1px solid var(--border-light)",
               marginTop: "8px",
@@ -290,7 +288,6 @@ export function Overview() {
                   onClick={() => handleStepClick(c.step - 1)}
                   style={{
                     padding: "2px 6px",
-                    borderRadius: "4px",
                     background: "var(--lime-soft)",
                     border: "1px solid var(--lime-border)",
                     color: "var(--lime)",

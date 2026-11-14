@@ -16,10 +16,8 @@ const roles: Array<{ value: Role; label: string }> = [
 const selectStyle = {
   minWidth: "126px",
   border: "1px solid var(--border-light)",
-  borderRadius: "6px",
   background: "var(--panel-raised)",
   padding: "7px 10px",
-  outline: "none",
 } as const;
 
 async function responseDetail(response: Response, fallback: string) {

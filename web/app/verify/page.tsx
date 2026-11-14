@@ -73,7 +73,6 @@ function VerifyLink() {
           height: "48px",
           display: "grid",
           placeItems: "center",
-          borderRadius: "50%",
           border: `1px solid ${status === "error" ? "var(--red-border)" : "var(--lime-border)"}`,
           background: status === "error" ? "var(--red-soft)" : "var(--lime-soft)",
           color: status === "error" ? "var(--red)" : "var(--lime)",
