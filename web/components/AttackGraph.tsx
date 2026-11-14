@@ -2,47 +2,112 @@
 
 import React, { useState, useEffect } from "react";
 import { useApp } from "../lib/state";
-import { GraphNode } from "../lib/types";
+import { ChainStep, GraphNode } from "../lib/types";
 import { timeWindow } from "../lib/time";
+
+const STEP_MS = 1300;
+const RADIUS = { hit: 20, reach: 17, normal: 15 };
+const ARROW = 9;
+const BUCKET_MINUTES = 5;
+const TIMELINE_X = 30;
+const TIMELINE_WIDTH = 700;
+
+function NodeIcon({ type }: { type: GraphNode["type"] }) {
+  if (type === "user") {
+    return (
+      <g className="g-icon">
+        <circle cx="0" cy="-3.5" r="3.2" />
+        <path d="M -6.5 7 C -6.5 2 6.5 2 6.5 7" />
+      </g>
+    );
+  }
+  if (type === "outside") {
+    return (
+      <g className="g-icon">
+        <circle r="6.5" />
+        <ellipse rx="2.8" ry="6.5" />
+        <line x1="-6.5" y1="0" x2="6.5" y2="0" />
+      </g>
+    );
+  }
+  return (
+    <g className="g-icon">
+      <rect x="-6.5" y="-7" width="13" height="5.5" />
+      <rect x="-6.5" y="1.5" width="13" height="5.5" />
+      <line x1="-4" y1="-4.25" x2="-2" y2="-4.25" />
+      <line x1="-4" y1="4.25" x2="-2" y2="4.25" />
+    </g>
+  );
+}
+
+function edgeGeometry(from: GraphNode, to: GraphNode) {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const dist = Math.hypot(dx, dy) || 1;
+  const ux = dx / dist;
+  const uy = dy / dist;
+  const start = RADIUS[from.state] + 4;
+  const end = RADIUS[to.state] + 4;
+  return {
+    x1: from.x + ux * start,
+    y1: from.y + uy * start,
+    x2: to.x - ux * end,
+    y2: to.y - uy * end,
+    lineEndX: to.x - ux * (end + ARROW - 1),
+    lineEndY: to.y - uy * (end + ARROW - 1),
+    angle: (Math.atan2(dy, dx) * 180) / Math.PI,
+    midX: (from.x + to.x) / 2,
+    midY: (from.y + to.y) / 2,
+  };
+}
+
+function nodeTitle(n: GraphNode, chain: ChainStep[]) {
+  const kind = n.type === "outside" ? "outside address" : n.type;
+  if (n.state === "hit") return `${n.id}, ${kind}, used in step ${n.step ?? chain[0]?.step}`;
+  if (n.state === "reach") return `${n.id}, ${kind}, reachable from a compromised account`;
+  return `${n.id}, ${kind}, normal activity`;
+}
 
 export function AttackGraph() {
   const { caseData, selectedStep, setSelectedStep } = useApp();
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [visibleSteps, setVisibleSteps] = useState<number>(5);
+  const [shownSteps, setShownSteps] = useState<number | null>(null);
+  const [replayId, setReplayId] = useState<number>(0);
   const [hasAutoReplayed, setHasAutoReplayed] = useState<boolean>(false);
+  const totalSteps = caseData?.chain.length ?? 0;
 
-  // Auto-replay on first load once graph data is ready
   useEffect(() => {
     if (caseData?.graph && !hasAutoReplayed) {
       setHasAutoReplayed(true);
       const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (!prefersReduced) {
+      if (!prefersReduced && totalSteps > 0) {
         setIsPlaying(true);
       }
     }
-  }, [caseData, hasAutoReplayed]);
+  }, [caseData, hasAutoReplayed, totalSteps]);
 
-  // Replay Attack animation
   useEffect(() => {
     if (!isPlaying) return;
 
     let current = 1;
-    setVisibleSteps(1);
+    setReplayId((id) => id + 1);
+    setShownSteps(1);
     setSelectedStep(0);
 
     const interval = setInterval(() => {
       current++;
-      if (current <= 5) {
-        setVisibleSteps(current);
+      if (current <= totalSteps) {
+        setShownSteps(current);
         setSelectedStep(current - 1);
       } else {
         setIsPlaying(false);
+        setShownSteps(null);
         clearInterval(interval);
       }
-    }, 1200);
+    }, STEP_MS);
 
     return () => clearInterval(interval);
-  }, [isPlaying, setSelectedStep]);
+  }, [isPlaying, setSelectedStep, totalSteps]);
 
   const handleReplay = () => {
     if (isPlaying) return;
@@ -52,7 +117,7 @@ export function AttackGraph() {
   const handleStepSelect = (idx: number) => {
     if (isPlaying) {
       setIsPlaying(false);
-      setVisibleSteps(5);
+      setShownSteps(null);
     }
     setSelectedStep(idx);
   };
@@ -62,13 +127,25 @@ export function AttackGraph() {
   }
 
   const { graph, chain, volume } = caseData;
+  const visible = shownSteps ?? chain.length;
   const maxCount = Math.max(1, ...volume.map((pt) => pt.count));
+  const axisMinutes = Math.max(1, volume.length * BUCKET_MINUTES);
+  const barStep = TIMELINE_WIDTH / Math.max(1, volume.length);
   const nodes = graph.nodes;
   const nodeMap = new Map<string, GraphNode>(nodes.map((n) => [n.id, n]));
+  const active = chain[selectedStep];
+  const activeIds = new Set(active ? [active.from, active.to] : []);
+  const chainKeys = new Set(chain.slice(0, visible).flatMap((s) => [`${s.from}>${s.to}`, `${s.to}>${s.from}`]));
+
+  const selectNode = (id: string) => {
+    const idx = chain.findIndex((s) => s.to === id);
+    const fallback = chain.findIndex((s) => s.from === id);
+    if (idx >= 0) handleStepSelect(idx);
+    else if (fallback >= 0) handleStepSelect(fallback);
+  };
 
   return (
     <div className="card" style={{ padding: 0, overflow: "hidden" }}>
-      {/* Graph Toolbar */}
       <div
         className="card-header"
         style={{
@@ -84,223 +161,113 @@ export function AttackGraph() {
 
         <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
           {isPlaying && (
-            <span className="mono" style={{ color: "var(--lime)", fontSize: "12px", fontWeight: 600 }}>
-              Replaying: {chain[Math.min(visibleSteps - 1, 4)]?.time} UTC
+            <span className="mono" style={{ color: "var(--accent)", fontSize: "12px", fontWeight: 600 }}>
+              Step {Math.min(visible, chain.length)} of {chain.length}, {chain[Math.min(visible, chain.length) - 1]?.time} UTC
             </span>
           )}
-          <button
-            className="btn btn-small btn-primary"
-            onClick={handleReplay}
-            disabled={isPlaying}
-          >
+          <button className="btn btn-small btn-primary" onClick={handleReplay} disabled={isPlaying || chain.length === 0}>
             {isPlaying ? "Replaying..." : "Replay attack"}
           </button>
         </div>
       </div>
 
-      {/* Main SVG Attack Canvas */}
       <div style={{ background: "var(--sidebar)", position: "relative" }}>
         <svg
           viewBox="0 0 860 500"
-          className="svg-canvas"
+          className="svg-canvas attack-graph"
           role="img"
-          aria-label="Attack topology graph"
-          style={{ width: "100%", height: "auto", display: "block" }}
+          aria-label="Attack graph: accounts, machines and outside addresses, with the attack steps drawn in order"
         >
           <defs>
-            <marker
-              id="arrow-attack"
-              viewBox="0 0 10 10"
-              refX="8"
-              refY="5"
-              markerWidth="8"
-              markerHeight="8"
-              orient="auto-start-reverse"
-            >
-              <path d="M 0 1 L 9 5 L 0 9 z" fill="var(--lime)" />
-            </marker>
-            <marker
-              id="arrow-dashed"
-              viewBox="0 0 10 10"
-              refX="8"
-              refY="5"
-              markerWidth="8"
-              markerHeight="8"
-              orient="auto-start-reverse"
-            >
-              <path d="M 0 1 L 9 5 L 0 9 z" fill="var(--amber)" />
-            </marker>
-            {/* Grid Pattern */}
             <pattern id="grid-dots" width="24" height="24" patternUnits="userSpaceOnUse">
-              <circle cx="2" cy="2" r="1" fill="var(--border)" />
+              <rect x="1.5" y="1.5" width="1" height="1" fill="var(--border-light)" />
             </pattern>
           </defs>
 
-          {/* Grid background */}
           <rect width="860" height="500" fill="url(#grid-dots)" />
 
-          {/* Normal Background Edges */}
-          {graph.edges.map((edge, i) => {
-            const fromNode = nodeMap.get(edge.from);
-            const toNode = nodeMap.get(edge.to);
-            if (!fromNode || !toNode) return null;
+          <g className="g-background">
+            {graph.edges.map((edge, i) => {
+              const fromNode = nodeMap.get(edge.from);
+              const toNode = nodeMap.get(edge.to);
+              if (!fromNode || !toNode || chainKeys.has(`${edge.from}>${edge.to}`)) return null;
+              return (
+                <line key={`bg-${i}`} x1={fromNode.x} y1={fromNode.y} x2={toNode.x} y2={toNode.y} />
+              );
+            })}
+          </g>
 
-            return (
-              <line
-                key={`normal-${i}`}
-                x1={fromNode.x}
-                y1={fromNode.y}
-                x2={toNode.x}
-                y2={toNode.y}
-                stroke="var(--border-light)"
-                strokeOpacity="0.55"
-                strokeWidth="1"
-              />
-            );
-          })}
-
-          {/* Attack Path Edges */}
           {chain.map((st, idx) => {
-            if (idx >= visibleSteps) return null;
+            if (idx >= visible) return null;
             const fromNode = nodeMap.get(st.from);
             const toNode = nodeMap.get(st.to);
             if (!fromNode || !toNode) return null;
 
+            const g = edgeGeometry(fromNode, toNode);
             const isSelected = selectedStep === idx;
-            const isDashed = st.inferred;
-
-            // Compute trimmed endpoints so arrows and packet pulses don't hide inside nodes
-            const dx = toNode.x - fromNode.x;
-            const dy = toNode.y - fromNode.y;
-            const dist = Math.hypot(dx, dy) || 1;
-            const pad = 22;
-            const x1 = fromNode.x + (dx / dist) * pad;
-            const y1 = fromNode.y + (dy / dist) * pad;
-            const x2 = toNode.x - (dx / dist) * (pad + 4);
-            const y2 = toNode.y - (dy / dist) * (pad + 4);
-
-            // Compute midpoint for step number badge
-            const midX = (fromNode.x + toNode.x) / 2;
-            const midY = (fromNode.y + toNode.y) / 2;
+            const kind = st.inferred ? "inferred" : "seen";
 
             return (
               <g
-                key={`chain-${st.step}`}
+                key={`chain-${replayId}-${st.step}`}
+                className={`g-step ${kind}${isSelected ? " sel" : ""}`}
                 onClick={() => handleStepSelect(idx)}
-                style={{ cursor: "pointer" }}
               >
-                {/* Hit area */}
+                <title>{`Step ${st.step}: ${st.what}`}</title>
+                <line x1={g.x1} y1={g.y1} x2={g.x2} y2={g.y2} className="g-hit" />
                 <line
-                  x1={x1}
-                  y1={y1}
-                  x2={x2}
-                  y2={y2}
-                  stroke="transparent"
-                  strokeWidth="24"
+                  x1={g.x1}
+                  y1={g.y1}
+                  x2={g.lineEndX}
+                  y2={g.lineEndY}
+                  pathLength={1}
+                  className="g-edge"
                 />
-                {/* Visual Line */}
-                <line
-                  x1={x1}
-                  y1={y1}
-                  x2={x2}
-                  y2={y2}
-                  stroke={isDashed ? "var(--amber)" : "var(--lime)"}
-                  strokeWidth={isSelected ? "4" : "2.2"}
-                  strokeDasharray={isDashed ? "5 5" : undefined}
-                  markerEnd={isDashed ? "url(#arrow-dashed)" : "url(#arrow-attack)"}
+                <path
+                  d={`M 0 0 L ${-ARROW} ${-ARROW / 2} L ${-ARROW} ${ARROW / 2} Z`}
+                  transform={`translate(${g.x2} ${g.y2}) rotate(${g.angle})`}
+                  className="g-arrow"
                 />
-                {/* Animated Packet Flow along Edge */}
-                {!isDashed && (
-                  <line
-                    x1={x1}
-                    y1={y1}
-                    x2={x2}
-                    y2={y2}
-                    className="e-p"
-                  />
+                {isSelected && !st.inferred && (
+                  <circle r="3" className="g-dot">
+                    <animateMotion
+                      dur="1.4s"
+                      repeatCount="indefinite"
+                      path={`M ${g.x1} ${g.y1} L ${g.lineEndX} ${g.lineEndY}`}
+                    />
+                  </circle>
                 )}
-                {/* Step Badge */}
-                <circle
-                  cx={midX}
-                  cy={midY}
-                  r="10"
-                  fill="var(--bg)"
-                  stroke={isSelected ? "var(--text)" : "var(--lime)"}
-                  strokeWidth={isSelected ? "2.5" : "1.5"}
-                />
-                <text
-                  x={midX}
-                  y={midY + 3.5}
-                  textAnchor="middle"
-                  fill={isSelected ? "var(--lime)" : "var(--text)"}
-                  fontSize="10"
-                  fontFamily="var(--font-mono)"
-                  fontWeight="700"
-                >
-                  {st.step}
-                </text>
+                <g transform={`translate(${g.midX} ${g.midY})`} className="g-badge">
+                  <rect x="-10" y="-10" width="20" height="20" />
+                  <text y="3.5" textAnchor="middle">
+                    {st.step}
+                  </text>
+                </g>
               </g>
             );
           })}
 
-          {/* Nodes */}
           {nodes.map((n) => {
-            const isHit = n.state === "hit" && visibleSteps >= (n.step || 1);
-            const isReachable = n.state === "reach" && visibleSteps >= 2;
+            const isHit = n.state === "hit" && visible >= (n.step ?? 1);
+            const isReach = n.state === "reach" && visible >= Math.min(2, chain.length);
+            const state = isHit ? "hit" : isReach ? "reach" : "normal";
+            const r = RADIUS[n.state];
+            const inChain = chain.some((s) => s.from === n.id || s.to === n.id);
+            const isActive = activeIds.has(n.id) && (isHit || isReach);
 
             return (
               <g
                 key={n.id}
-                transform={`translate(${n.x}, ${n.y})`}
-                style={{ cursor: "pointer" }}
+                transform={`translate(${n.x} ${n.y})`}
+                className={`g-node ${state} ${n.type}${isActive ? " active" : ""}${inChain ? " clickable" : ""}`}
+                onClick={inChain ? () => selectNode(n.id) : undefined}
               >
-                {/* Node Outer Circle */}
-                <circle
-                  r={isHit ? "18" : isReachable ? "16" : "14"}
-                  fill="var(--panel)"
-                  stroke={
-                    isHit ? "var(--lime)" : isReachable ? "var(--amber)" : "var(--border-light)"
-                  }
-                  strokeWidth={isHit || isReachable ? "2" : "1"}
-                  strokeDasharray={isReachable ? "4 3" : undefined}
-                />
-
-                {/* Node Icon */}
-                {n.type === "user" ? (
-                  <path
-                    d="M -4 4 A 4 4 0 0 1 4 4 M 0 -4 A 2.5 2.5 0 1 1 0 -9 A 2.5 2.5 0 1 1 0 -4"
-                    fill="none"
-                    stroke={isHit ? "var(--lime)" : "var(--text-muted)"}
-                    strokeWidth="1.4"
-                  />
-                ) : n.type === "outside" ? (
-                  <circle
-                    r="5"
-                    fill="none"
-                    stroke={isHit ? "var(--red)" : "var(--text-dim)"}
-                    strokeWidth="1.5"
-                  />
-                ) : (
-                  <rect
-                    x="-6"
-                    y="-5"
-                    width="12"
-                    height="10"
-                    fill="none"
-                    stroke={isHit ? "var(--lime)" : isReachable ? "var(--amber)" : "var(--text-dim)"}
-                    strokeWidth="1.4"
-                  />
-                )}
-
-                {/* Node Label */}
-                <text
-                  y="26"
-                  textAnchor="middle"
-                  fill={isHit ? "var(--text)" : "var(--text-dim)"}
-                  fontSize="11"
-                  fontFamily="var(--font-mono)"
-                  fontWeight={isHit ? "600" : "400"}
-                >
+                <title>{nodeTitle(n, chain)}</title>
+                {isActive && <circle r={r} className="g-halo" />}
+                {isHit && <circle key={`burst-${replayId}`} r={r} className="g-burst" />}
+                <circle r={r} className="g-ring" />
+                <NodeIcon type={n.type} />
+                <text y={r + 15} textAnchor="middle" className="g-label">
                   {n.id}
                 </text>
               </g>
@@ -309,45 +276,29 @@ export function AttackGraph() {
         </svg>
       </div>
 
-      {/* Legend */}
-      <div
-        style={{
-          display: "flex",
-          gap: "18px",
-          padding: "10px 20px",
-          borderTop: "1px solid var(--border)",
-          background: "var(--panel)",
-          fontSize: "11px",
-          color: "var(--text-muted)",
-          flexWrap: "wrap",
-        }}
-      >
-        <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: "var(--lime)" }} />
+      <div className="graph-legend">
+        <span>
+          <span className="legend-ring hit" />
           Compromised
         </span>
-        <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <span
-            style={{
-              width: "10px",
-              height: "10px",
-              borderRadius: "50%",
-              border: "1.5px dashed var(--amber)",
-            }}
-          />
+        <span>
+          <span className="legend-ring outside" />
+          Outside address the attacker used
+        </span>
+        <span>
+          <span className="legend-ring reach" />
           Reachable from a compromised account
         </span>
-        <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "var(--border-light)" }} />
+        <span>
+          <span className="legend-ring" />
           Normal activity
         </span>
-        <span style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-          <span style={{ width: "14px", height: "2px", background: "var(--lime)" }} />
+        <span>
+          <span className="legend-line" />
           Attack step
         </span>
       </div>
 
-      {/* Bottom Timeline with Volume Bars */}
       <div
         style={{
           padding: "14px 20px",
@@ -364,80 +315,51 @@ export function AttackGraph() {
 
         <div style={{ overflowX: "auto" }}>
           <svg viewBox="0 0 760 80" className="svg-canvas" style={{ minWidth: "540px" }}>
-            {/* Background Bars */}
             {volume.map((pt, i) => {
-              const x = 30 + i * (700 / volume.length);
               const h = (pt.count / maxCount) * 45;
               return (
                 <rect
                   key={pt.start}
-                  x={x}
+                  x={TIMELINE_X + i * barStep}
                   y={60 - h}
-                  width={700 / volume.length - 4}
+                  width={Math.max(1, barStep - 4)}
                   height={h}
                   fill="var(--border)"
                 />
               );
             })}
 
-            {/* Time labels */}
-            {[0, 15, 30, 45, 60, 75, 90].map((t) => {
-              const x = 30 + (t / 90) * 700;
-              const hr = 3 + Math.floor(t / 60);
-              const mn = t % 60;
-              const label = `0${hr}:${mn === 0 ? "00" : mn}`;
-              return (
+            {volume.map((pt, i) =>
+              i % 3 === 0 ? (
                 <text
-                  key={t}
-                  x={x}
+                  key={`t-${pt.start}`}
+                  x={TIMELINE_X + i * barStep}
                   y="74"
                   fill="var(--text-dim)"
                   fontSize="9"
                   fontFamily="var(--font-mono)"
                   textAnchor="middle"
                 >
-                  {label}
+                  {pt.start}
                 </text>
-              );
-            })}
+              ) : null,
+            )}
 
-            {/* Plotted Attack Step Pins */}
             {chain.map((st, i) => {
-              if (i >= visibleSteps) return null;
-              const x = 30 + (st.minute / 90) * 700;
+              if (i >= visible) return null;
+              const x = TIMELINE_X + (st.minute / axisMinutes) * TIMELINE_WIDTH;
               const isSelected = selectedStep === i;
 
               return (
                 <g
-                  key={st.step}
+                  key={`pin-${replayId}-${st.step}`}
+                  className={`t-pin${isSelected ? " sel" : ""}`}
                   onClick={() => handleStepSelect(i)}
-                  style={{ cursor: "pointer" }}
                 >
-                  <line
-                    x1={x}
-                    y1="14"
-                    x2={x}
-                    y2="60"
-                    stroke={isSelected ? "var(--lime)" : "var(--lime-border)"}
-                    strokeWidth={isSelected ? "2" : "1"}
-                  />
-                  <circle
-                    cx={x}
-                    cy="14"
-                    r="8"
-                    fill={isSelected ? "var(--lime)" : "var(--bg)"}
-                    stroke="var(--lime)"
-                    strokeWidth="1.5"
-                  />
-                  <text
-                    x={x}
-                    y="17"
-                    textAnchor="middle"
-                    fill={isSelected ? "var(--bg)" : "var(--lime)"}
-                    fontSize="9"
-                    fontFamily="var(--font-mono)"
-                    fontWeight="700"
-                  >
+                  <title>{`Step ${st.step} at ${st.time} UTC`}</title>
+                  <line x1={x} y1="14" x2={x} y2="60" />
+                  <rect x={x - 8} y="6" width="16" height="16" />
+                  <text x={x} y="17.5" textAnchor="middle">
                     {st.step}
                   </text>
                 </g>

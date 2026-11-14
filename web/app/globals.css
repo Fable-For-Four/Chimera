@@ -1001,12 +1001,6 @@ tr:hover td {
   display: block;
 }
 
-@keyframes flow {
-  to {
-    stroke-dashoffset: -93;
-  }
-}
-
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -1098,34 +1092,324 @@ tr:hover td {
   color: var(--text);
 }
 
-.e-p {
-  stroke: #ffffff;
-  stroke-opacity: 0.85;
-  stroke-width: 2.5;
-  stroke-dasharray: 3 90;
-  stroke-linecap: butt;
-  animation: flow 1.6s linear infinite;
+.attack-graph {
+  font-family: var(--font-mono);
+}
+
+.g-background line {
+  stroke: var(--border-light);
+  stroke-width: 1;
+  opacity: 0.45;
+}
+
+.g-step {
+  cursor: pointer;
+}
+
+.g-hit {
+  stroke: transparent;
+  stroke-width: 22;
+}
+
+.g-edge {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: g-draw 0.7s cubic-bezier(0.3, 0.7, 0.4, 1) forwards;
+  transition: stroke-width 0.25s ease, stroke 0.25s ease;
+}
+
+.g-step.inferred .g-edge {
+  stroke: var(--amber);
+  stroke-dasharray: 0.025 0.02;
+  stroke-dashoffset: 0;
+  animation: g-fade 0.6s ease-out both;
+}
+
+.g-arrow {
+  fill: var(--accent);
+  animation: g-fade 0.25s ease-out 0.55s both;
+}
+
+.g-step.inferred .g-arrow {
+  fill: var(--amber);
+  animation-delay: 0.3s;
+}
+
+.g-step.sel .g-edge {
+  stroke-width: 3;
+}
+
+.g-step:hover .g-edge {
+  stroke: var(--accent-hover);
+}
+
+.g-dot {
+  fill: var(--text);
   pointer-events: none;
 }
 
-/* Selected edge styling */
-.edge-selected {
-  stroke-width: 4 !important;
+.g-badge {
+  animation: g-fade 0.3s ease-out 0.35s both;
 }
 
-.badge-selected {
-  stroke: var(--text) !important;
-  stroke-width: 2.5 !important;
+.g-badge rect {
+  fill: var(--bg);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  transition: fill 0.25s ease, stroke 0.25s ease;
 }
 
+.g-badge text {
+  fill: var(--text);
+  font-size: 10px;
+  font-weight: 700;
+  transition: fill 0.25s ease;
+}
 
-/* Accessibility: Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .e-p {
-    display: none !important;
+.g-step.inferred .g-badge rect {
+  stroke: var(--amber);
+}
+
+.g-step.sel .g-badge rect {
+  fill: var(--accent);
+}
+
+.g-step.sel .g-badge text {
+  fill: var(--on-accent);
+}
+
+.g-step.inferred.sel .g-badge rect {
+  fill: var(--amber);
+}
+
+.g-ring {
+  fill: var(--panel);
+  stroke: var(--border-light);
+  stroke-width: 1;
+  transition: stroke 0.45s ease, stroke-width 0.45s ease, fill 0.45s ease;
+}
+
+.g-icon {
+  fill: none;
+  stroke: var(--text-dim);
+  stroke-width: 1.4;
+  transition: stroke 0.45s ease;
+}
+
+.g-label {
+  fill: var(--text-dim);
+  font-size: 11px;
+  paint-order: stroke;
+  stroke: var(--sidebar);
+  stroke-width: 5px;
+  stroke-linejoin: round;
+  transition: fill 0.45s ease;
+}
+
+.g-node.reach .g-ring {
+  stroke: var(--amber);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+}
+
+.g-node.reach .g-icon {
+  stroke: var(--amber);
+}
+
+.g-node.hit .g-ring {
+  fill: var(--accent-soft);
+  stroke: var(--accent);
+  stroke-width: 2;
+}
+
+.g-node.hit .g-icon {
+  stroke: var(--accent);
+}
+
+.g-node.hit .g-label {
+  fill: var(--text);
+  font-weight: 600;
+}
+
+.g-node.hit.outside .g-ring {
+  fill: var(--red-soft);
+  stroke: var(--red);
+}
+
+.g-node.hit.outside .g-icon {
+  stroke: var(--red);
+}
+
+.g-node.clickable {
+  cursor: pointer;
+}
+
+.g-node.clickable:hover .g-ring {
+  stroke-width: 3;
+}
+
+.g-halo,
+.g-burst {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  pointer-events: none;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.g-node.outside .g-halo,
+.g-node.outside .g-burst {
+  stroke: var(--red);
+}
+
+.g-halo {
+  animation: g-pulse 1.8s ease-out infinite;
+}
+
+.g-burst {
+  opacity: 0;
+  animation: g-burst 0.8s ease-out;
+}
+
+.graph-legend {
+  display: flex;
+  gap: 18px;
+  padding: 10px 20px;
+  border-top: 1px solid var(--border);
+  background: var(--panel);
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+
+.graph-legend > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.legend-ring {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 1px solid var(--border-light);
+  background: var(--panel);
+}
+
+.legend-ring.hit {
+  border: 2px solid var(--accent);
+  background: var(--accent-soft);
+}
+
+.legend-ring.outside {
+  border: 2px solid var(--red);
+  background: var(--red-soft);
+}
+
+.legend-ring.reach {
+  border: 1.5px dashed var(--amber);
+}
+
+.legend-line {
+  width: 16px;
+  height: 2px;
+  background: var(--accent);
+}
+
+.t-pin {
+  cursor: pointer;
+  animation: g-fade 0.35s ease-out both;
+}
+
+.t-pin line {
+  stroke: var(--accent-border);
+  stroke-width: 1;
+  transition: stroke 0.25s ease;
+}
+
+.t-pin rect {
+  fill: var(--bg);
+  stroke: var(--accent);
+  stroke-width: 1.5;
+  transition: fill 0.25s ease;
+}
+
+.t-pin text {
+  fill: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  transition: fill 0.25s ease;
+}
+
+.t-pin.sel line {
+  stroke: var(--accent);
+}
+
+.t-pin.sel rect {
+  fill: var(--accent);
+}
+
+.t-pin.sel text {
+  fill: var(--on-accent);
+}
+
+@keyframes g-draw {
+  to {
+    stroke-dashoffset: 0;
   }
+}
+
+@keyframes g-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes g-pulse {
+  from {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  to {
+    transform: scale(1.7);
+    opacity: 0;
+  }
+}
+
+@keyframes g-burst {
+  from {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  to {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
   .stages li.now .dot {
     animation: none;
+  }
+  .g-edge,
+  .g-arrow,
+  .g-badge,
+  .t-pin {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .g-halo,
+  .g-burst,
+  .g-dot {
+    display: none;
   }
 }
 
