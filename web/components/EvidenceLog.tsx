@@ -245,7 +245,8 @@ export function EvidenceLog() {
             color: "var(--text-dim)",
           }}
         >
-          Showing {filteredEvents.length} events (of 5,124 total in dataset). Green-tinted rows represent confirmed links inside the reconstructed attack chain.
+          Showing {filteredEvents.length} events (of {caseData.summary.events.toLocaleString()} total in
+          dataset). Green-tinted rows represent confirmed links inside the reconstructed attack chain.
         </div>
       </div>
     </div>

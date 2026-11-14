@@ -61,6 +61,7 @@ export function AttackGraph() {
   }
 
   const { graph, chain, volume } = caseData;
+  const maxCount = Math.max(1, ...volume.map((pt) => pt.count));
   const nodes = graph.nodes;
   const nodeMap = new Map<string, GraphNode>(nodes.map((n) => [n.id, n]));
 
@@ -366,7 +367,7 @@ export function AttackGraph() {
             {/* Background Bars */}
             {volume.map((pt, i) => {
               const x = 30 + i * (700 / volume.length);
-              const h = (pt.count / 340) * 45;
+              const h = (pt.count / maxCount) * 45;
               return (
                 <rect
                   key={pt.start}
