@@ -21,7 +21,7 @@ export function Start() {
   if (!intake) {
     return (
       <div className="card" style={{ padding: "40px", textAlign: "center" }}>
-        <p className="kicker">Loading intake telemetry...</p>
+        <p className="kicker">Loading the logs…</p>
       </div>
     );
   }
@@ -42,15 +42,11 @@ export function Start() {
           <div className="metric-label">Log sources</div>
         </div>
         <div className="metric-box">
-          <div className="metric-val" style={{ color: "var(--amber)" }}>
-            {summary.late}
-          </div>
+          <div className="metric-val">{summary.late}</div>
           <div className="metric-label">Arrived late, out of order</div>
         </div>
         <div className="metric-box">
-          <div className="metric-val" style={{ color: "var(--lime)" }}>
-            {summary.alerts_fired}
-          </div>
+          <div className="metric-val">{summary.alerts_fired}</div>
           <div className="metric-label">Alerts fired</div>
         </div>
       </div>
@@ -60,11 +56,7 @@ export function Start() {
         {/* Left: Volume & CTA */}
         <div className="card">
           <div className="card-header">
-            <div>
-              <div className="kicker">Events per 5 minutes</div>
-              <h2 className="card-title">Event volume, 03:00 to 04:30 UTC</h2>
-            </div>
-            <span className="pill pill-lime">All {summary.sources} Sources Healthy</span>
+            <h2 className="card-title">Events per 5 minutes, 03:00 to 04:30 UTC</h2>
           </div>
 
           {/* SVG Volume Bars */}
@@ -161,7 +153,6 @@ export function Start() {
         <div className="card">
           <div className="card-header">
             <div>
-              <div className="kicker">What the usual alerts saw</div>
               <h2 className="card-title">
                 Alert rules ({alert_rules.filter((r) => r.fired).length} of {alert_rules.length} fired)
               </h2>
@@ -205,8 +196,8 @@ export function Start() {
           </div>
 
           <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "auto", lineHeight: "1.6" }}>
-            Sophisticated adversaries purposely split actions into quiet fragments. By evaluating events in
-            isolation, single-event alert rules remain blind to the complete attack kill-chain.
+            Each rule checks one line against a limit. An attack split into small steps stays under every
+            limit.
           </p>
         </div>
       </div>
@@ -215,8 +206,7 @@ export function Start() {
       <div className="card">
         <div className="card-header">
           <div>
-            <div className="kicker">Raw lines, as they arrived</div>
-            <h2 className="card-title">Latest logs</h2>
+            <h2 className="card-title">Latest logs, in the order they arrived</h2>
           </div>
           <Link href="/logs" className="btn btn-small">
             Open all {summary.events.toLocaleString()} events
@@ -230,7 +220,7 @@ export function Start() {
                 <th style={{ width: "90px" }}>ID</th>
                 <th style={{ width: "100px" }}>Time (UTC)</th>
                 <th style={{ width: "110px" }}>Source</th>
-                <th>Raw Log Event</th>
+                <th>Log line</th>
               </tr>
             </thead>
             <tbody>

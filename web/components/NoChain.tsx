@@ -58,7 +58,7 @@ export function NoChain() {
             <h3 className="card-title">Every stage ran</h3>
           </div>
           <Link href="/logs" className="btn btn-small">
-            See the scored events →
+            See the scored events
           </Link>
         </div>
         <ul className="stages">

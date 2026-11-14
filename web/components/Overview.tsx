@@ -29,69 +29,21 @@ export function Overview() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-      {/* Verdict Hero Card */}
-      <div
-        className="card"
-        style={{
-          borderLeft: `4px solid ${confidence >= 70 ? "var(--lime)" : "var(--amber)"}`,
-          background: "var(--panel)",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        <div style={{ display: "flex", gap: "28px", alignItems: "center", flexWrap: "wrap" }}>
-          {/* Radial Confidence Gauge */}
-          <div style={{ position: "relative", width: "110px", height: "110px", flexShrink: 0 }}>
-            <svg viewBox="0 0 110 110" style={{ transform: "rotate(-90deg)", width: "100%", height: "100%" }}>
-              <circle
-                cx="55"
-                cy="55"
-                r="46"
-                fill="none"
-                stroke="var(--panel-raised)"
-                strokeWidth="8"
-              />
-              <circle
-                cx="55"
-                cy="55"
-                r="46"
-                fill="none"
-                stroke={confidence >= 70 ? "var(--lime)" : "var(--amber)"}
-                strokeWidth="8"
-                strokeDasharray="289"
-                strokeDashoffset={289 * (1 - confidence / 100)}
-                strokeLinecap="round"
-                style={{ transition: "stroke-dashoffset 0.5s ease" }}
-              />
-            </svg>
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                textAlign: "center",
-              }}
-            >
-              <span className="mono" style={{ fontSize: "24px", fontWeight: 700, color: "var(--text)" }}>
-                {confidence}%
-              </span>
-              <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
-                confidence
-              </span>
+      <div className="card">
+        <div>
+          <div>
+            <div className="verdict-line">
+              <h1>{verdict.label}</h1>
+              <span className={`verdict-conf ${confidence >= 70 ? "strong" : "weak"}`}>{confidence}% confidence</span>
             </div>
-          </div>
-
-          {/* Verdict Text & Facts */}
-          <div style={{ flex: 1, minWidth: "280px" }}>
-            <div className="kicker" style={{ color: confidence >= 70 ? "var(--lime)" : "var(--amber)" }}>
-              Verdict
+            <div className="verdict-meter" aria-hidden="true">
+              <span
+                style={{
+                  width: `${confidence}%`,
+                  background: confidence >= 70 ? "var(--accent)" : "var(--amber)",
+                }}
+              />
             </div>
-            <h1 style={{ fontSize: "26px", fontWeight: 700, margin: "2px 0 6px", color: "var(--text)" }}>
-              {verdict.label}
-            </h1>
             <p style={{ fontSize: "14px", color: "var(--text-muted)", maxWidth: "800px", lineHeight: "1.6" }}>
               {verdict.headline}
             </p>
@@ -167,7 +119,6 @@ export function Overview() {
         <div className="card">
           <div className="card-header">
             <div>
-              <div className="kicker">Tested against the chain</div>
               <h3 className="card-title">Other explanations</h3>
             </div>
           </div>
@@ -218,7 +169,6 @@ export function Overview() {
         <div className="card">
           <div className="card-header">
             <div>
-              <div className="kicker">How the case was worked</div>
               <h3 className="card-title">
                 Stage durations ({stages.reduce((total, s) => total + s.seconds, 0).toFixed(2)}s)
               </h3>
@@ -244,7 +194,6 @@ export function Overview() {
         <div className="card">
           <div className="card-header">
             <div>
-              <div className="kicker">Nothing runs until an analyst approves</div>
               <h3 className="card-title">Recommended actions</h3>
             </div>
             <span className="mono" style={{ fontSize: "11px", color: "var(--text-dim)" }}>
@@ -293,7 +242,7 @@ export function Overview() {
           </div>
 
           <p style={{ fontSize: "11px", color: "var(--text-dim)", marginTop: "auto" }}>
-            Chimera recommends containment protocols, but no network changes take place until an analyst approves.
+            Nothing changes on the network until an analyst approves it.
           </p>
         </div>
       </div>
@@ -302,7 +251,6 @@ export function Overview() {
       <div className="card">
         <div className="card-header">
           <div>
-            <div className="kicker">Every answer cites log lines</div>
             <h3 className="card-title">Ask the case</h3>
           </div>
         </div>
@@ -350,7 +298,7 @@ export function Overview() {
                     fontSize: "11px",
                   }}
                 >
-                  {c.id} (Step {c.step}) ↗
+                  {c.id}, step {c.step}
                 </button>
               ))}
             </div>

@@ -210,14 +210,14 @@ export function EvidenceDrawer() {
           onClick={() => setSelectedStep(Math.max(0, selectedStep - 1))}
           disabled={selectedStep === 0}
         >
-          ← Previous Step
+          Previous step
         </button>
         <button
           className="btn btn-small"
           onClick={() => setSelectedStep(Math.min(totalSteps - 1, selectedStep + 1))}
           disabled={selectedStep === totalSteps - 1}
         >
-          Next Step →
+          Next step
         </button>
       </div>
     </div>
