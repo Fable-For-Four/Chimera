@@ -97,5 +97,5 @@ The password comes from `SEED_PASSWORD` in `.env`, default `chimera-demo-1`.
 - The local demo uses plain HTTP. A real deployment needs HTTPS and the `Secure` cookie flag.
 - Sessions last one hour and have no refresh token. Users sign in again after expiry.
 - Server logs remain on the machine running the application. When `RESEND_API_KEY` is unset, those logs contain verification links and must not be shared.
-- Chimera currently reads its normalized event format rather than connecting directly to S3, Splunk, Sentinel or another customer log store.
+- Chimera currently reads its normalized event format rather than connecting directly to S3, Splunk, Sentinel or another customer log store. A standalone parser converts key=value, JSON lines, syslog and CSV files into that format (`python -m api.parse_logs FILE --out DIR --date YYYY-MM-DD`). Lines it cannot read are written to `unparsed.jsonl` with a reason. There is no upload screen yet, and imported files carry no arrival time, so they show no late events.
 - The supplied baselines are static files. A live deployment would maintain evolving baselines in durable storage.
