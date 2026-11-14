@@ -35,6 +35,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   };
 
   const isCaseReady = Boolean(caseData && caseData.verdict && caseData.verdict.found);
+  const isNoChain = Boolean(caseData && caseData.verdict && !caseData.verdict.found);
   const confidence = caseData?.verdict?.confidence ?? 0;
 
   return (
@@ -77,7 +78,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
         >
           <div className="kicker" style={{ marginBottom: "2px" }}>Case 0114 · Acme Corp</div>
           <div style={{ fontSize: "12px", color: "var(--text)", fontWeight: 500 }}>
-            {isCaseReady ? "Active Breach Investigation" : "Pre-Investigation Intake"}
+            {isCaseReady
+              ? "Active Breach Investigation"
+              : isNoChain
+              ? "Investigation Complete · No Chain"
+              : "Pre-Investigation Intake"}
           </div>
           <div style={{ fontSize: "10px", color: "var(--text-dim)", marginTop: "4px" }}>
             14 Nov 2026 · 03:00–04:30 UTC
@@ -176,13 +181,15 @@ export function Shell({ children }: { children: React.ReactNode }) {
               <span className={`pill ${confidence >= 70 ? "pill-red" : "pill-amber"}`}>
                 {confidence >= 70 ? "High Severity Attack" : "Suspicious Activity"}
               </span>
+            ) : isNoChain ? (
+              <span className="pill pill-lime">No Attack Chain Found</span>
             ) : (
               <span className="pill pill-lime">Intake Ingested · Clean Alert Rules</span>
             )}
           </div>
 
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            {isCaseReady && (
+            {(isCaseReady || isNoChain) && (
               <>
                 <button
                   className="btn btn-small"

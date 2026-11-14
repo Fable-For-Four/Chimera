@@ -4,6 +4,7 @@ import React from "react";
 import { useApp } from "../lib/state";
 import { Start } from "../components/Start";
 import { Overview } from "../components/Overview";
+import { NoChain } from "../components/NoChain";
 import { RunningStage } from "../components/RunningStage";
 
 export default function HomePage() {
@@ -33,6 +34,10 @@ export default function HomePage() {
 
   if (isCaseReady) {
     return <Overview />;
+  }
+
+  if (caseData) {
+    return <NoChain />;
   }
 
   return <Start />;
