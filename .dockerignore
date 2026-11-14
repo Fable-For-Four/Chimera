@@ -1,0 +1,17 @@
+.git
+.env
+.env.*
+!.env.example
+.venv
+venv
+app.db
+out
+logs
+*.log
+__pycache__
+.pytest_cache
+web/node_modules
+web/.next
+web/*.tsbuildinfo
+.claude
+.DS_Store

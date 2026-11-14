@@ -304,6 +304,12 @@ def test_login_cookie_has_the_same_flags_as_signup(client):
     assert "secure" not in cookie
 
 
+def test_cookie_is_secure_when_cookie_secure_is_true(client, monkeypatch):
+    monkeypatch.setenv("COOKIE_SECURE", "true")
+    assert "secure" in login(client, "analyst@acme.test").headers["set-cookie"].lower()
+    assert "secure" in client.post("/api/auth/logout").headers["set-cookie"].lower()
+
+
 def test_signup_cookie_path_is_root(client):
     assert "path=/" in signup(client).headers["set-cookie"].lower().replace("; ", ";").split(";")
 

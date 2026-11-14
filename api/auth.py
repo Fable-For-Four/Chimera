@@ -56,12 +56,18 @@ def set_session_cookie(response: Response, user_id):
         path="/",
         httponly=True,
         samesite="lax",
-        secure=False,
+        secure=cookie_secure(),
     )
 
 
+def cookie_secure():
+    return os.environ.get("COOKIE_SECURE", "").lower() == "true"
+
+
 def clear_session_cookie(response: Response):
-    response.delete_cookie(COOKIE_NAME, path="/", httponly=True, samesite="lax")
+    response.delete_cookie(
+        COOKIE_NAME, path="/", httponly=True, samesite="lax", secure=cookie_secure()
+    )
 
 
 def user_out(row):

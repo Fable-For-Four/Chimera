@@ -1,8 +1,9 @@
+import os
 import sqlite3
 from datetime import UTC, datetime
 from pathlib import Path
 
-DB_PATH = Path(__file__).resolve().parent.parent / "app.db"
+DB_PATH = Path(os.environ.get("DB_PATH") or Path(__file__).resolve().parent.parent / "app.db")
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
