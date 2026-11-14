@@ -98,7 +98,7 @@ export function AttackGraph() {
       </div>
 
       {/* Main SVG Attack Canvas */}
-      <div style={{ background: "#0a0e16", position: "relative" }}>
+      <div style={{ background: "var(--sidebar)", position: "relative" }}>
         <svg
           viewBox="0 0 860 480"
           className="svg-canvas"
@@ -131,7 +131,7 @@ export function AttackGraph() {
             </marker>
             {/* Grid Pattern */}
             <pattern id="grid-dots" width="24" height="24" patternUnits="userSpaceOnUse">
-              <circle cx="2" cy="2" r="1" fill="#1b2331" />
+              <circle cx="2" cy="2" r="1" fill="var(--border)" />
             </pattern>
           </defs>
 
@@ -151,7 +151,7 @@ export function AttackGraph() {
                 y1={fromNode.y}
                 x2={toNode.x}
                 y2={toNode.y}
-                stroke="#1f293b"
+                stroke="var(--border-light)"
                 strokeWidth="1.2"
                 strokeDasharray="2 3"
               />
@@ -223,7 +223,7 @@ export function AttackGraph() {
                   cx={midX}
                   cy={midY}
                   r="10"
-                  fill="#0c1018"
+                  fill="var(--bg)"
                   stroke={isSelected ? "var(--text)" : "var(--lime)"}
                   strokeWidth={isSelected ? "2.5" : "1.5"}
                 />
@@ -256,7 +256,7 @@ export function AttackGraph() {
                 {/* Node Outer Circle */}
                 <circle
                   r={isHit ? "18" : isReachable ? "16" : "14"}
-                  fill="#111722"
+                  fill="var(--panel)"
                   stroke={
                     isHit ? "var(--lime)" : isReachable ? "var(--amber)" : "var(--border-light)"
                   }
@@ -376,7 +376,7 @@ export function AttackGraph() {
                   width={700 / volume.length - 4}
                   height={h}
                   rx="1.5"
-                  fill="#1b2331"
+                  fill="var(--border)"
                 />
               );
             })}
@@ -426,7 +426,7 @@ export function AttackGraph() {
                     cx={x}
                     cy="14"
                     r="8"
-                    fill={isSelected ? "var(--lime)" : "#0c1018"}
+                    fill={isSelected ? "var(--lime)" : "var(--bg)"}
                     stroke="var(--lime)"
                     strokeWidth="1.5"
                   />
@@ -434,7 +434,7 @@ export function AttackGraph() {
                     x={x}
                     y="17"
                     textAnchor="middle"
-                    fill={isSelected ? "#0c1018" : "var(--lime)"}
+                    fill={isSelected ? "var(--bg)" : "var(--lime)"}
                     fontSize="9"
                     fontFamily="var(--font-mono)"
                     fontWeight="700"

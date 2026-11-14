@@ -82,7 +82,7 @@ export function EvidenceDrawer() {
           </span>
           <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>{step.usual}</div>
         </div>
-        <div style={{ background: "#161c28", padding: "10px 12px" }}>
+        <div style={{ background: "var(--panel-raised)", padding: "10px 12px" }}>
           <span className="kicker" style={{ display: "block", marginBottom: "2px", color: "var(--amber)" }}>
             Observed Deviation
           </span>

@@ -150,7 +150,7 @@ export function EvidenceLog() {
                       key={ev.id}
                       className={inChain ? "in-chain" : ""}
                       style={{
-                        background: inChain ? "rgba(199, 246, 107, 0.03)" : undefined,
+                        background: inChain ? "var(--accent-soft)" : undefined,
                       }}
                     >
                       <td style={{ color: inChain ? "var(--lime)" : "var(--text-muted)", fontWeight: 600 }}>

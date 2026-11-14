@@ -49,7 +49,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
               height: "32px",
               borderRadius: "6px",
               background: "var(--lime)",
-              color: "#0c1018",
+              color: "var(--on-accent)",
               display: "grid",
               placeItems: "center",
               fontWeight: 800,

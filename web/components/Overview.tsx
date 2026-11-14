@@ -156,7 +156,7 @@ export function Overview() {
           <div className="card-header">
             <div>
               <div className="kicker">Attack Progression</div>
-              <h2 className="card-title">How the Attack Unfolded (5 Connected Steps)</h2>
+              <h2 className="card-title">How the attack unfolded ({chain.length} connected steps)</h2>
             </div>
             <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
               Select any step to inspect exhibits & network graph
@@ -195,7 +195,7 @@ export function Overview() {
                       height: "22px",
                       borderRadius: "50%",
                       background: "var(--lime)",
-                      color: "#0c1018",
+                      color: "var(--on-accent)",
                       display: "grid",
                       placeItems: "center",
                       fontSize: "11px",
@@ -285,7 +285,9 @@ export function Overview() {
           <div className="card-header">
             <div>
               <div className="kicker">How the case was worked</div>
-              <h3 className="card-title">Stage Durations (5.1s)</h3>
+              <h3 className="card-title">
+                Stage durations ({stages.reduce((total, s) => total + s.seconds, 0).toFixed(2)}s)
+              </h3>
             </div>
           </div>
 
