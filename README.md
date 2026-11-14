@@ -69,6 +69,27 @@ pytest
 ./check.sh web        # npm lint and build in web/
 ```
 
+## Deploy on Railway
+
+One container runs both servers. Next.js serves the site on Railway's `PORT` and forwards `/api` to FastAPI inside the container, so the browser sees a single address and the session cookie keeps working.
+
+1. Create a Railway project from this GitHub repo. Railway reads `railway.json` and builds the `Dockerfile`.
+2. Add a volume mounted at `/data`, so accounts survive redeploys.
+3. Set these variables in Railway (never in the repo):
+
+| Variable | Value |
+|---|---|
+| `JWT_SECRET` | 64 random hex characters (`openssl rand -hex 32`) |
+| `SEED_PASSWORD` | a new password, not the demo default |
+| `COOKIE_SECURE` | `true` |
+| `DB_PATH` | `/data/app.db` |
+| `APP_URL` | the public Railway address, for verification links |
+| `RESEND_API_KEY` | optional; without it, verification links go to the deploy log |
+
+4. Generate a public domain under Settings, Networking. Every push to `main` then redeploys.
+
+The container refuses to start without `JWT_SECRET` and `SEED_PASSWORD`. `API_URL` changes where Next.js forwards `/api` at build time; leave it empty in this single-container setup.
+
 ## Demo accounts
 
 | Email | Role |
