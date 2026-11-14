@@ -1,6 +1,6 @@
 // TypeScript types representing the data contracts defined in PLAN.md §4 and §14
 
-export type Night = "attack" | "quiet" | "random";
+export type Night = "attack" | "stopped" | "gap" | "quiet" | "spray" | "late_work" | "random";
 
 export interface User {
   id: number;

@@ -98,7 +98,7 @@ class VerifyBody(BaseModel):
 
 
 class RunBody(BaseModel):
-    night: Literal["attack", "quiet", "random"] = "attack"
+    night: Literal["attack", "stopped", "gap", "quiet", "spray", "late_work", "random"] = "attack"
 
 
 def app_url():

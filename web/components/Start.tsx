@@ -5,10 +5,14 @@ import Link from "next/link";
 import { useApp } from "../lib/state";
 import type { Night } from "../lib/types";
 
-const NIGHTS: [Night, string, string][] = [
-  ["attack", "Attack night", "The night with the planted attack (seed 7)"],
-  ["quiet", "Quiet night", "A busy night with no attack in it"],
-  ["random", "Random night", "A new night with the attack, built from a random seed"],
+const CASES: [Night, string, string][] = [
+  ["attack", "Payroll data theft", "Stolen VPN password, admin rights, payroll files read and sent out."],
+  ["stopped", "Break-in stopped early", "Stolen password and admin rights, but cut off before any data left."],
+  ["gap", "Theft with a missing log", "The same theft, but the domain controller log went silent mid-attack."],
+  ["quiet", "Mail server flood", "A flood of connections from one address. Noisy, but no break-in."],
+  ["spray", "Failed password spray", "One address tries a password on many accounts. Nobody gets in."],
+  ["late_work", "Employee working late", "A real employee signs in from home at 3 a.m. and opens her own files."],
+  ["random", "Payroll theft, fresh background", "The theft again, inside a new random night of normal activity."],
 ];
 
 export function Start() {
@@ -125,25 +129,25 @@ export function Start() {
               </div>
             </div>
 
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-              <div className="night-picker" role="radiogroup" aria-label="Which night to investigate">
-                {NIGHTS.map(([value, label, hint]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    role="radio"
-                    aria-checked={night === value}
-                    className={night === value ? "active" : ""}
-                    title={hint}
-                    onClick={() => setNight(value)}
-                    disabled={isRunning}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: "10px", flexWrap: "wrap" }}>
+              <label className="case-picker">
+                <span>Test case</span>
+                <select
+                  value={night}
+                  onChange={(e) => setNight(e.target.value as Night)}
+                  disabled={isRunning}
+                >
+                  {CASES.map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+                <small>{CASES.find(([value]) => value === night)?.[2]}</small>
+              </label>
               <button
                 className="btn btn-primary"
+                style={{ marginTop: "21px" }}
                 onClick={runInvestigation}
                 disabled={isRunning || user?.role === "viewer"}
               >

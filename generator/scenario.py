@@ -54,6 +54,8 @@ ATTACKER_IP = "203.0.113.47"
 EXFIL_IP = "198.51.100.23"
 MAIL_RELAY_IP = "192.0.2.25"
 DOS_IP = "203.0.113.77"
+SPRAY_IP = "203.0.113.90"
+HOME_IP = "198.18.0.44"
 
 DAY_ACTIONS = ["AUTH_OK", "MAIL_RECV", "MAIL_SEND"]
 NIGHT_ACTIONS = ["AUTH_OK", "LOGON", "MAIL_RECV", "MAIL_SEND", "SMB_SESSION", "FILE_READ"]
@@ -259,6 +261,53 @@ def attack_events():
             dst=EXFIL_IP,
             bytes_out=2_254_857_830,
         ),
+    ]
+
+
+def stopped_events():
+    """Steps 1 to 3 only: the attacker gets admin rights, then is cut off before taking data."""
+    return attack_events()[:7]
+
+
+def gap_events():
+    """The full theft, but the domain controller log goes silent during the lateral movement."""
+    return [e for e in attack_events() if not (e["source"] == "dc" and e["action"] != "GROUP_ADD")]
+
+
+def spray_events():
+    """One outside address tries one password against many accounts. Nothing gets in."""
+    users = NAMED_USERS + ["kavya.k", "rohan.m", "sanjay.h", "farah.d", "neha.k", "aditi.x"]
+    return [
+        event(
+            f"03:{20 + i // 3:02d}:{(i * 17) % 60:02d}",
+            "vpn-gw",
+            "AUTH_FAIL",
+            user=u,
+            src=SPRAY_IP,
+            geo="BR",
+        )
+        for i, u in enumerate(users * 2)
+    ]
+
+
+def late_work_events():
+    """priya.s works late from home in India and opens her own team's files. Not an attack."""
+    return [
+        event("03:05:12", "vpn-gw", "AUTH_OK", user="priya.s", src=HOME_IP, geo="IN"),
+        event(
+            "03:07:40", "WS-PRIYA-014", "LOGON", user="priya.s", host="WS-PRIYA-014", type="remote"
+        ),
+        event(
+            "03:15:03",
+            "files",
+            "FILE_READ",
+            user="priya.s",
+            host="HR-SRV-01",
+            src="WS-PRIYA-014",
+            path="/hr/reviews/2026",
+            files=14,
+        ),
+        event("03:48:30", "vpn-gw", "LOGOFF", user="priya.s", src=HOME_IP, geo="IN"),
     ]
 
 

@@ -452,7 +452,7 @@ def test_run_passes_the_chosen_night_to_the_engine(client, monkeypatch, body, ni
     assert seen == [night]
 
 
-@pytest.mark.parametrize("night", ["../etc", "data", "ATTACK", 7])
+@pytest.mark.parametrize("night", ["../etc", "data", "ATTACK", "dos", "chain", 7])
 def test_run_rejects_an_unknown_night(client, night):
     as_user(client, "analyst")
     assert client.post("/api/case/run", json={"night": night}).status_code == 422
@@ -463,10 +463,25 @@ def test_viewer_cannot_run_any_night(client):
     assert client.post("/api/case/run", json={"night": "random"}).status_code == 403
 
 
-@pytest.mark.parametrize("night, found", [("quiet", False), ("random", True)])
-def test_real_engine_runs_each_night(monkeypatch, tmp_path, night, found):
+@pytest.mark.parametrize(
+    "night, found, steps, inferred",
+    [
+        ("attack", True, 5, 0),
+        ("stopped", True, 3, 0),
+        ("gap", True, 5, 1),
+        ("quiet", False, 0, 0),
+        ("spray", False, 0, 0),
+        ("late_work", False, 0, 0),
+        ("random", True, 5, 0),
+    ],
+)
+def test_real_engine_gives_each_test_case_its_verdict(
+    monkeypatch, tmp_path, night, found, steps, inferred
+):
     monkeypatch.setattr(case_files, "OUT_DIR", tmp_path / "out")
     case = case_files.run_investigation(lambda: None, night=night)
     assert case["verdict"]["found"] is found
+    assert len(case["chain"]) == steps
+    assert sum(s["inferred"] for s in case["chain"]) == inferred
     assert (tmp_path / "out" / "intake.json").exists()
     assert (tmp_path / "out" / "stress" / "40.json").exists()
