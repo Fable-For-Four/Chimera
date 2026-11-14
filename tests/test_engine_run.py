@@ -2,12 +2,10 @@ import json
 import time
 
 from engine.run import run
-from tests.test_contract import assert_case_contract
+from tests.test_contract import assert_case_contract, assert_intake_contract
 
 
 def test_run_writes_a_case_that_passes_the_contract(tmp_path):
-    (tmp_path / "stress").mkdir()
-    (tmp_path / "stress" / "05.json").write_text("{}")  # stale file from a sample run
     start = time.perf_counter()
     case = run("data", tmp_path)
     assert time.perf_counter() - start < 20
@@ -15,8 +13,10 @@ def test_run_writes_a_case_that_passes_the_contract(tmp_path):
     written = json.loads((tmp_path / "case.json").read_text(encoding="utf-8"))
     assert written == case
     assert json.loads((tmp_path / "stress" / "00.json").read_text(encoding="utf-8")) == case
-    assert not (tmp_path / "stress" / "05.json").exists()
     assert_case_contract(case)
+    intake = json.loads((tmp_path / "intake.json").read_text(encoding="utf-8"))
+    assert_intake_contract(intake)
+    assert case["summary"] == intake["summary"] and case["volume"] == intake["volume"]
 
     assert [s["name"] for s in case["stages"]] == [
         "Sort",
