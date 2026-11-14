@@ -150,7 +150,8 @@ def describe(stage, e, profile, time):
             f"{svc['logon_types'][0].capitalize()} jobs from {', '.join(svc['sources'])}"
             f" at {svc['job_hours'][0]:02}:00"
             if svc
-            else f"Uses {', '.join(profile.users.get(e['user'], {}).get('hosts', [])) or 'nothing known'}"
+            else "Uses "
+            + (", ".join(profile.users.get(e["user"], {}).get("hosts", [])) or "nothing known")
         )
     if stage == 2:
         if e["action"] == "LOGON":
@@ -248,7 +249,8 @@ def build_steps(chain, profile, start):
                     "minute": before["minute"],
                     "from": before["to"],
                     "to": after["from"],
-                    "what": f"The logs do not show {s['stage'].lower()}, but the steps around need it",
+                    "what": f"The logs do not show {s['stage'].lower()}, "
+                    "but the steps around need it",
                     "confidence": round(min(before["confidence"], after["confidence"]) / 2),
                     "usual": "",
                     "now": "",
